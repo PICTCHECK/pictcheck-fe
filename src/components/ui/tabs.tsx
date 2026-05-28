@@ -11,7 +11,7 @@ interface TabsProps<T extends string> {
 }
 
 const tabTriggerVariants = cva(
-  "min-w-0 flex-1 whitespace-nowrap rounded-button border px-2 py-2 text-center text-[10px] font-bold transition-colors",
+  "min-w-0 flex-1 cursor-pointer whitespace-nowrap rounded-button border px-2 py-2 text-center text-[10px] font-bold transition-colors",
   {
     variants: {
       active: {
