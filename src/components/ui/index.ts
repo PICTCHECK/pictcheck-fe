@@ -6,6 +6,7 @@ export * from "@/src/components/ui/result-summary-card";
 export * from "@/src/components/ui/risk-score-circle";
 export * from "@/src/components/ui/spinner";
 export * from "@/src/components/ui/suspicion-marker";
+export * from "@/src/components/ui/suspicion-thumbnail";
 export * from "@/src/components/ui/tabs";
 export * from "@/src/components/ui/toast";
 export * from "@/src/components/ui/upload-box";
