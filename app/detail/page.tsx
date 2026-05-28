@@ -4,14 +4,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUploadImage } from '@/src/components/providers/upload-image-provider';
-import { Card, Header, Tabs } from '@/src/components/ui';
+import { AnalysisCard, Card, Header, Tabs } from '@/src/components/ui';
 import { DetailImageViewer } from './components/detail-image-viewer';
-import { SuspicionDetailCard } from './components/suspicion-detail-card';
-import { getContainRectPercent } from './utils/contain-rect';
+
+const DETAIL_VISUAL_NOTICE_SUMMARY = '일부 영역에서 부자연스러운 디테일이 확인됩니다.';
+const DETAIL_VISUAL_NOTICE_CAUTION = '상세 분석 결과를 참고해보세요.';
 
 export default function Page() {
   const router = useRouter();
-  const { previewUrl, dimensions, analysisResult } = useUploadImage();
+  const { previewUrl, analysisResult } = useUploadImage();
   const suspicions = useMemo(() => analysisResult?.vision.suspicions ?? [], [analysisResult]);
   const [tab, setTab] = useState('');
 
@@ -31,28 +32,40 @@ export default function Page() {
     return suspicions[0]?.id ?? '';
   }, [suspicions, tab]);
 
-  const current = useMemo(() => suspicions.find((item) => item.id === activeTab) ?? suspicions[0], [activeTab, suspicions]);
+  const current = useMemo(
+    () => suspicions.find((item) => item.id === activeTab) ?? suspicions[0],
+    [activeTab, suspicions],
+  );
   const tabOptions = useMemo(() => suspicions.map((item) => ({ label: item.title, value: item.id })), [suspicions]);
-  const containRect = useMemo(() => getContainRectPercent(dimensions), [dimensions]);
-
   if (!analysisResult || !current) return null;
+  const isLowLevel = analysisResult.sightengine.level === 'low';
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-[390px] bg-background">
       <Header title="상세 분석" showBackButton />
       <div className="space-y-4 px-4 pb-8 pt-4">
-        <p className="text-center text-body-sm text-muted-foreground">의심 요소 시각화 및 상세 근거 확인</p>
+        <p className="text-center text-body-sm text-muted-foreground">시각적 관찰 포인트와 확인 영역 안내</p>
 
-        <DetailImageViewer previewUrl={previewUrl} suspicions={suspicions} containRect={containRect} />
+        <DetailImageViewer previewUrl={previewUrl} suspicions={suspicions} />
         <Tabs value={activeTab} onChange={setTab} options={tabOptions} />
-        <SuspicionDetailCard current={current} previewUrl={previewUrl} />
+        <AnalysisCard
+          title={current.title}
+          description={current.technicalReason ?? current.detailDescription}
+          confidence={current.evidenceStrength}
+          thumbnail={previewUrl ? { src: previewUrl, area: current.area, alt: current.title } : null}
+        />
 
         {analysisResult.vision.hasVisibleEvidence ? (
-          <Card className="flex items-start gap-3 border-amber-200 bg-amber-50/30 p-3">
-            <AlertTriangle className="mt-0.5 size-5 text-semantic-warning" />
+          <Card className="flex items-start gap-3 border-amber-200 bg-amber-50/30 p-3 mt-9 border">
+            <AlertTriangle className="mt-0.5 size-6 text-semantic-warning" />
             <div className="space-y-1">
-              <p className="text-caption text-muted-foreground">{analysisResult.vision.summary}</p>
-              <p className="text-caption text-muted-foreground">{analysisResult.vision.caution}</p>
+              <p className="text-caption text-muted-foreground">{DETAIL_VISUAL_NOTICE_SUMMARY}</p>
+              <p className="text-caption text-muted-foreground">{DETAIL_VISUAL_NOTICE_CAUTION}</p>
+              {isLowLevel ? (
+                <p className="text-caption text-muted-foreground">
+                  이 항목은 AI 판정 근거가 아니라 사용자가 직접 확인할 수 있는 시각적 관찰 정보입니다.
+                </p>
+              ) : null}
             </div>
           </Card>
         ) : null}

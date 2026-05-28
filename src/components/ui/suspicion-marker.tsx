@@ -7,12 +7,14 @@ interface SuspicionMarkerProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   x: number;
   y: number;
   index: number;
+  coordinateUnit?: 'percent' | 'pixel';
 }
 
 export function SuspicionMarker({
   x,
   y,
   index,
+  coordinateUnit = 'percent',
   className,
   style,
   ...props
@@ -28,8 +30,8 @@ export function SuspicionMarker({
         className,
       )}
       style={{
-        left: `${boundedX}%`,
-        top: `${boundedY}%`,
+        left: coordinateUnit === 'pixel' ? `${x}px` : `${boundedX}%`,
+        top: coordinateUnit === 'pixel' ? `${y}px` : `${boundedY}%`,
         ...style,
       }}
       {...props}
