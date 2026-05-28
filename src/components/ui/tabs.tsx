@@ -11,7 +11,7 @@ interface TabsProps<T extends string> {
 }
 
 const tabTriggerVariants = cva(
-  "min-w-0 flex-1 cursor-pointer whitespace-nowrap rounded-button border px-2 py-2 text-center text-[10px] font-bold transition-colors",
+  "shrink-0 cursor-pointer whitespace-nowrap rounded-button border px-3 py-2 text-center text-[11px] font-bold transition-colors",
   {
     variants: {
       active: {
@@ -32,7 +32,8 @@ export function Tabs<T extends string>({
   className,
 }: TabsProps<T>) {
   return (
-    <div className={cn("flex gap-2", className)} role="tablist">
+    <div className={cn('scrollbar-none overflow-x-auto pb-1 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden', className)}>
+      <div className="flex min-w-max gap-2" role="tablist">
       {options.map((option) => {
         const active = option.value === value;
         return (
@@ -44,10 +45,11 @@ export function Tabs<T extends string>({
             onClick={() => onChange(option.value)}
             className={tabTriggerVariants({ active })}
           >
-            {option.label}
+            <span className="block max-w-[96px] overflow-hidden text-ellipsis whitespace-nowrap">{option.label}</span>
           </button>
         );
       })}
+      </div>
     </div>
   );
 }

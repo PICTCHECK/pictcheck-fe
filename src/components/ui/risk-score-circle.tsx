@@ -22,6 +22,12 @@ interface RiskScoreCircleProps {
   className?: string;
 }
 
+function getVisualProgress(score: number) {
+  if (score >= 100) return 100;
+  if (score >= 99) return 96;
+  return score;
+}
+
 const SIZE_CONFIG: Record<
   RiskScoreCircleSize,
   { diameter: number; strokeWidth: number; valueClass: string; percentClass: string }
@@ -54,11 +60,12 @@ export function RiskScoreCircle({
   className,
 }: RiskScoreCircleProps) {
   const normalizedScore = clampAiScore(score);
+  const visualProgress = getVisualProgress(normalizedScore);
   const level = levelProp ?? deriveRiskLevel(normalizedScore);
   const { diameter, strokeWidth, valueClass, percentClass } = SIZE_CONFIG[size];
   const radius = (diameter - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const dashOffset = circumference - (normalizedScore / 100) * circumference;
+  const dashOffset = circumference - (visualProgress / 100) * circumference;
   const riskStyles = getRiskStyles(level);
 
   return (
