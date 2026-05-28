@@ -1,13 +1,25 @@
 import type { RiskLevel } from '@/src/lib/risk-styles';
-import type { SuspicionArea, SuspicionMarker, VisionSuspicion, VisionSuspicionCategory } from '@/src/lib/analysis/types';
+import type {
+  SuspicionArea,
+  SuspicionMarker,
+  VisionEvidenceStrength,
+  VisionSuspicion,
+  VisionSuspicionCategory,
+} from '@/src/lib/analysis/types';
 
 const MIN_BOUND = 0;
 const MAX_BOUND = 100;
 const MAX_SUSPICIONS = 3;
-const MAX_TITLE_LENGTH = 8;
-const TITLE_HARD_LIMIT = 12;
+const MAX_TITLE_LENGTH = 32;
 
-const VISION_CATEGORIES: VisionSuspicionCategory[] = ['anatomy', 'lighting', 'texture', 'background', 'artifact', 'text'];
+const VISION_CATEGORIES: VisionSuspicionCategory[] = [
+  'anatomy',
+  'lighting',
+  'texture',
+  'background',
+  'artifact',
+  'text',
+];
 const RISK_LEVELS: RiskLevel[] = ['high', 'medium', 'low'];
 const FALLBACK_TITLE_BY_CATEGORY: Record<VisionSuspicionCategory, string> = {
   anatomy: '손가락 어색함',
@@ -31,7 +43,10 @@ const EASY_KOREAN_REPLACEMENTS: Array<[RegExp, string]> = [
 ];
 
 function toSimpleKoreanText(text: string): string {
-  return EASY_KOREAN_REPLACEMENTS.reduce((accumulator, [pattern, replacement]) => accumulator.replace(pattern, replacement), text)
+  return EASY_KOREAN_REPLACEMENTS.reduce(
+    (accumulator, [pattern, replacement]) => accumulator.replace(pattern, replacement),
+    text,
+  )
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
@@ -45,12 +60,23 @@ function sanitizeTitleText(title: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 
-  return noEnglishAndSpecial.slice(0, MAX_TITLE_LENGTH);
+  if (noEnglishAndSpecial.length <= MAX_TITLE_LENGTH) {
+    return noEnglishAndSpecial;
+  }
+
+  // Keep natural Korean word boundaries when shortening long titles.
+  const shortened = noEnglishAndSpecial.slice(0, MAX_TITLE_LENGTH).trim();
+  const lastSpaceIndex = shortened.lastIndexOf(' ');
+  if (lastSpaceIndex < 3) {
+    return shortened;
+  }
+
+  return shortened.slice(0, lastSpaceIndex);
 }
 
 function normalizeTitle(title: string, category: VisionSuspicionCategory): string {
   const normalized = sanitizeTitleText(title);
-  if (!normalized || title.length > TITLE_HARD_LIMIT) {
+  if (!normalized) {
     return FALLBACK_TITLE_BY_CATEGORY[category];
   }
 
@@ -58,20 +84,77 @@ function normalizeTitle(title: string, category: VisionSuspicionCategory): strin
 }
 
 function normalizeUserFacingSentence(text: string): string {
-  const simplified = toSimpleKoreanText(text);
-  const softTone = simplified
-    .replace(/입니다\./g, '처럼 보입니다.')
-    .replace(/입니다$/g, '처럼 보입니다')
-    .replace(/입니다,/g, '처럼 보이며,');
-  if (!softTone) {
-    return softTone;
+  const simplified = toSimpleKoreanText(text)
+    .replace(/[。]/g, '.')
+    .replace(/\s*\n+\s*/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  if (!simplified) {
+    return simplified;
   }
 
-  if (/(처럼 보입니다|어색해 보입니다|의심됩니다)\.?$/.test(softTone)) {
-    return softTone;
+  const deduplicated = simplified
+    .replace(/(처럼 보입니다\.?\s*){2,}/g, '처럼 보입니다. ')
+    .replace(/(어색해 보입니다\.?\s*){2,}/g, '어색해 보입니다. ')
+    .replace(/(의심됩니다\.?\s*){2,}/g, '의심됩니다. ')
+    .replace(/(가능성이 있습니다\.?\s*){2,}/g, '가능성이 있습니다. ')
+    .replace(/(확인됩니다\.?\s*){2,}/g, '확인됩니다. ')
+    .replace(/(보일 수 있습니다\.?\s*){2,}/g, '보일 수 있습니다. ')
+    .replace(/처럼 보입니다\.?\s*때문에/g, '때문에')
+    .replace(/([.!?])\s*\1+/g, '$1')
+    .trim();
+
+  if (
+    /(처럼 보입니다|어색해 보입니다|의심됩니다|가능성이 있습니다|확인됩니다|보일 수 있습니다)\.?$/.test(deduplicated)
+  ) {
+    return deduplicated.endsWith('.') ? deduplicated : `${deduplicated}.`;
   }
 
-  return `${softTone}처럼 보입니다.`;
+  if (/[.!?]$/.test(deduplicated)) {
+    return deduplicated;
+  }
+
+  return `${deduplicated}.`;
+}
+
+function splitSentences(text: string): string[] {
+  return text
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+}
+
+function normalizeDetailDescription(text: string): string {
+  const normalized = normalizeUserFacingSentence(text);
+  if (!normalized) {
+    return normalized;
+  }
+
+  const sentences = splitSentences(normalized);
+  if (sentences.length <= 2) {
+    return normalized;
+  }
+
+  return sentences.slice(0, 2).join(' ');
+}
+
+function normalizeTechnicalReason(text: string): string {
+  const simplified = toSimpleKoreanText(text)
+    .replace(/[A-Za-z]+/g, ' ')
+    .replace(/[。]/g, '.')
+    .replace(/\s*\n+\s*/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/([.!?])\s*\1+/g, '$1')
+    .trim();
+
+  if (!simplified) {
+    return '';
+  }
+
+  const normalized = normalizeUserFacingSentence(simplified);
+  const sentences = splitSentences(normalized);
+
+  return sentences.slice(0, 3).join(' ');
 }
 
 function clampPercent(value: number): number {
@@ -127,14 +210,16 @@ function normalizeSuspicion(suspicion: VisionSuspicion): VisionSuspicion {
   const area = normalizeArea(suspicion.area);
   return {
     ...suspicion,
-    confidence: clampPercent(suspicion.confidence),
     area,
     marker: normalizeMarker(area, suspicion.marker),
   };
 }
 
 export function normalizeVisionSuspicions(suspicions: VisionSuspicion[]): VisionSuspicion[] {
-  return [...suspicions].map(normalizeSuspicion).sort((a, b) => a.priority - b.priority).slice(0, MAX_SUSPICIONS);
+  return [...suspicions]
+    .map(normalizeSuspicion)
+    .sort((a, b) => a.priority - b.priority)
+    .slice(0, MAX_SUSPICIONS);
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -155,6 +240,24 @@ function normalizeCategory(value: unknown): VisionSuspicionCategory {
 
 function normalizeRiskLevel(value: unknown): RiskLevel {
   return RISK_LEVELS.includes(value as RiskLevel) ? (value as RiskLevel) : 'medium';
+}
+
+function confidenceToEvidenceStrength(confidence: number): VisionEvidenceStrength {
+  if (confidence >= 70) return 'high';
+  if (confidence >= 45) return 'medium';
+  return 'low';
+}
+
+function normalizeEvidenceStrength(value: unknown): VisionEvidenceStrength {
+  if (value === 'high' || value === 'medium' || value === 'low') {
+    return value;
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return confidenceToEvidenceStrength(clampPercent(value));
+  }
+
+  return 'medium';
 }
 
 function toVisionSuspicion(value: unknown, index: number): VisionSuspicion | null {
@@ -181,12 +284,37 @@ function toVisionSuspicion(value: unknown, index: number): VisionSuspicion | nul
   const id = readString(value.id) || `vision-suspicion-${safeIndex}`;
   const title = normalizeTitle(readString(value.title), category);
   const description = normalizeUserFacingSentence(readString(value.description));
-  const detailDescription = normalizeUserFacingSentence(readString(value.detailDescription));
-  const technicalReason = readString(value.technicalReason);
-  const priority = readNumber(value.priority, safeIndex);
-  const confidence = readNumber(value.confidence, 50);
+  const rawDetailDescription = readString(value.detailDescription);
+  const rawTechnicalReason = readString(value.technicalReason);
+  const detailDescriptionBase = rawDetailDescription || description;
+  let detailDescription = normalizeDetailDescription(detailDescriptionBase);
+  let technicalReason = normalizeTechnicalReason(rawTechnicalReason);
 
-  if (!title || !description || !detailDescription || !technicalReason) {
+  if (!technicalReason && rawDetailDescription) {
+    const detailSentences = splitSentences(normalizeUserFacingSentence(rawDetailDescription));
+    if (detailSentences.length > 2) {
+      technicalReason = normalizeTechnicalReason(detailSentences.slice(1).join(' '));
+    }
+  }
+
+  if (technicalReason && detailDescription.length >= technicalReason.length) {
+    const detailSentences = splitSentences(detailDescription);
+    technicalReason = normalizeTechnicalReason(technicalReason);
+    if (detailSentences.length >= 1) {
+      const shortenedDetail = normalizeDetailDescription(detailSentences[0]);
+      detailDescription = shortenedDetail || detailDescription;
+    }
+  }
+
+  if (technicalReason && technicalReason === detailDescription) {
+    technicalReason = '';
+  }
+  const priority = readNumber(value.priority, safeIndex);
+  const evidenceStrength = normalizeEvidenceStrength(
+    value.evidenceStrength ?? value.visualClarity ?? value.confidence ?? normalizeRiskLevel(value.riskLevel),
+  );
+
+  if (!title || !description || !detailDescription) {
     return null;
   }
 
@@ -195,9 +323,8 @@ function toVisionSuspicion(value: unknown, index: number): VisionSuspicion | nul
     title,
     description,
     detailDescription,
-    technicalReason,
-    riskLevel: normalizeRiskLevel(value.riskLevel),
-    confidence,
+    technicalReason: technicalReason || undefined,
+    evidenceStrength,
     category,
     area,
     marker,
@@ -218,7 +345,9 @@ export function parseVisionPayloadFromUnknown(value: unknown): {
   const summary = normalizeUserFacingSentence(readString(value.summary));
   const caution = normalizeUserFacingSentence(readString(value.caution));
   const rawSuspicions = Array.isArray(value.suspicions) ? value.suspicions : [];
-  const suspicions = normalizeVisionSuspicions(rawSuspicions.map((entry, index) => toVisionSuspicion(entry, index)).filter(Boolean) as VisionSuspicion[]);
+  const suspicions = normalizeVisionSuspicions(
+    rawSuspicions.map((entry, index) => toVisionSuspicion(entry, index)).filter(Boolean) as VisionSuspicion[],
+  );
 
   if (!summary || !caution) {
     return null;

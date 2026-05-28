@@ -10,8 +10,7 @@ const MOCK_OPENAI_VISION_SUSPICIONS: VisionSuspicion[] = [
       '손가락 경계가 비정상적으로 이어지고 일부 관절 비율이 자연스러운 해부학 패턴과 다르게 나타납니다. AI 생성 이미지에서 자주 관찰되는 왜곡 유형입니다.',
     technicalReason:
       '손가락 분절 구조가 연속 곡면으로 융합되며 관절 간 거리 편차가 커집니다. 생성 모델이 미세 윤곽을 복원하는 과정에서 형태 제약을 충분히 반영하지 못할 때 발생할 수 있습니다.',
-    riskLevel: 'high',
-    confidence: 88,
+    evidenceStrength: 'high',
     category: 'anatomy',
     area: {
       x: 26,
@@ -34,8 +33,7 @@ const MOCK_OPENAI_VISION_SUSPICIONS: VisionSuspicion[] = [
       '피사체와 배경 오브젝트의 명암 및 그림자 방향이 서로 다른 광원 조건을 가리킵니다. 장면 전체 조명 일관성이 낮아 합성 또는 생성 흔적으로 해석될 수 있습니다.',
     technicalReason:
       '주요 엣지 주변 하이라이트와 투영 그림자의 각도 벡터가 동일 소실점으로 수렴하지 않습니다. 픽셀 단위 조명 단서가 물리적 조명 모델과 부분적으로 어긋납니다.',
-    riskLevel: 'medium',
-    confidence: 74,
+    evidenceStrength: 'medium',
     category: 'lighting',
     area: {
       x: 76,
@@ -58,8 +56,7 @@ const MOCK_OPENAI_VISION_SUSPICIONS: VisionSuspicion[] = [
       '바닥과 외곽 배경에서 짧은 주기로 유사한 질감 블록이 반복됩니다. 자연 촬영 이미지보다 패턴 주기성이 강해 생성형 모델의 타일링 흔적일 가능성이 있습니다.',
     technicalReason:
       '고주파 성분 분포가 국소 영역에서 주기적으로 재현되며 비슷한 텍스처 패치가 반복됩니다. 디테일 업샘플링 단계에서 동일 특징이 재사용되며 생길 수 있습니다.',
-    riskLevel: 'medium',
-    confidence: 69,
+    evidenceStrength: 'medium',
     category: 'texture',
     area: {
       x: 47,
@@ -80,8 +77,8 @@ export const MOCK_PICTCHECK_ANALYSIS_RESULT = buildPictcheckAnalysisResult({
   sightengineAiGenerated: 0.85,
   vision: {
     hasVisibleEvidence: true,
-    summary: 'OpenAI Vision이 이미지에서 시각적으로 설명 가능한 의심 요소를 확인했습니다.',
-    caution: '의심 영역은 참고용 추정이며 최종 판정이 아닙니다.',
+    summary: '이미지에서 사용자가 확인해볼 만한 시각적 특징을 참고용으로 표시했습니다.',
+    caution: '이 항목은 AI 판정 근거가 아니라 시각적 관찰 정보입니다.',
     suspicions: MOCK_OPENAI_VISION_SUSPICIONS,
   },
 });
