@@ -3,7 +3,7 @@
 import { ImageIcon } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { cn } from "@/src/lib/cn";
-import { getUploadErrorMessage } from "@/src/lib/upload-errors";
+import { getUploadErrorMessage, type UploadErrorMessage } from "@/src/lib/upload-errors";
 import { Spinner } from "@/src/components/ui/spinner";
 import { UploadImagePreview } from "@/src/components/ui/upload-image-preview";
 
@@ -13,7 +13,7 @@ interface UploadBoxProps {
   previewLayoutId?: string;
   maxSizeBytes?: number;
   onFileAccepted?: (file: File) => void;
-  onValidationError?: (message: string) => void;
+  onValidationError?: (message: UploadErrorMessage) => void;
   className?: string;
 }
 

@@ -9,6 +9,7 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
+import type { PictcheckAnalysisResult } from "@/src/lib/analysis/types";
 
 type ImageDimensions = { width: number; height: number } | null;
 
@@ -16,7 +17,9 @@ type UploadImageContextValue = {
   file: File | null;
   previewUrl: string | null;
   dimensions: ImageDimensions;
+  analysisResult: PictcheckAnalysisResult | null;
   setFile: (file: File) => void;
+  setAnalysisResult: (analysisResult: PictcheckAnalysisResult | null) => void;
   clearFile: () => void;
 };
 
@@ -26,10 +29,12 @@ export function UploadImageProvider({ children }: PropsWithChildren) {
   const [file, setFileState] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState<ImageDimensions>(null);
+  const [analysisResult, setAnalysisResult] = useState<PictcheckAnalysisResult | null>(null);
 
   const setFile = useCallback((newFile: File) => {
     setFileState(newFile);
     setDimensions(null);
+    setAnalysisResult(null);
     setPreviewUrl((prevUrl) => {
       if (prevUrl) URL.revokeObjectURL(prevUrl);
       return URL.createObjectURL(newFile);
@@ -38,6 +43,7 @@ export function UploadImageProvider({ children }: PropsWithChildren) {
 
   const clearFile = useCallback(() => {
     setFileState(null);
+    setAnalysisResult(null);
     setPreviewUrl((prevUrl) => {
       if (prevUrl) URL.revokeObjectURL(prevUrl);
       return null;
@@ -77,10 +83,12 @@ export function UploadImageProvider({ children }: PropsWithChildren) {
       file,
       previewUrl,
       dimensions,
+      analysisResult,
       setFile,
+      setAnalysisResult,
       clearFile,
     }),
-    [file, previewUrl, dimensions, setFile, clearFile],
+    [file, previewUrl, dimensions, analysisResult, setFile, clearFile],
   );
 
   return <UploadImageContext.Provider value={value}>{children}</UploadImageContext.Provider>;
