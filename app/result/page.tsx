@@ -6,7 +6,12 @@ import { ImageIcon, Lock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUploadImage } from '@/src/components/providers/upload-image-provider';
 import { Button, Header, ResultSummaryCard } from '@/src/components/ui';
-import { formatSuspicionCountLabel, getPictcheckResultDisplay, getPictcheckSuspicionEmptyState } from '@/src/lib/risk-styles';
+import {
+  formatSuspicionCountLabel,
+  getPictcheckResultDisplay,
+  getPictcheckSuspicionEmptyState,
+  getVisionSectionDisplay,
+} from '@/src/lib/risk-styles';
 import { SuspicionList } from './components/suspicion-list';
 
 export default function Page() {
@@ -24,12 +29,13 @@ export default function Page() {
   const resultDisplay = getPictcheckResultDisplay(level, analysisResult.suspicionDetected);
   const suspicions = resultDisplay.showSuspicions ? analysisResult.vision.suspicions : [];
   const suspicionEmptyState = getPictcheckSuspicionEmptyState(level);
+  const visionSectionDisplay = getVisionSectionDisplay(level);
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-[390px] bg-background">
-      <Header title="분석 결과" showBackButton />
+      <Header title="분석 결과" />
       <div className="space-y-4 px-4 pb-8 pt-4">
-        <p className="text-center text-body-sm text-muted-foreground">AI 생성 가능성 결과 및 핵심 요약</p>
+        <p className="text-center text-body-sm text-muted-foreground">AI 생성 가능성 결과 및 시각 관찰 요약</p>
 
         <ResultSummaryCard
           score={score}
@@ -40,7 +46,7 @@ export default function Page() {
         />
 
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-body-md font-semibold tracking-[-0.02em]">핵심 의심 요소</h2>
+          <h2 className="text-body-md font-semibold tracking-[-0.02em]">{visionSectionDisplay.title}</h2>
           <p className="text-body-sm text-muted-foreground">
             {formatSuspicionCountLabel(suspicions.length, resultDisplay.showSuspicions)}
           </p>
@@ -57,7 +63,7 @@ export default function Page() {
         {resultDisplay.showSuspicions && suspicions.length > 0 ? (
           <Link href="/detail" className="block">
             <Button variant="tertiary" size="lg" className="h-12 w-full">
-              AI 의심 영역 자세히 보기 →
+              {visionSectionDisplay.detailButtonLabel}
             </Button>
           </Link>
         ) : null}

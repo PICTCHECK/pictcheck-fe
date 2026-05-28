@@ -1,4 +1,5 @@
 export * from "@/src/components/ui/badge";
+export * from "@/src/components/ui/analysis-card";
 export * from "@/src/components/ui/button";
 export * from "@/src/components/ui/card";
 export * from "@/src/components/ui/header";

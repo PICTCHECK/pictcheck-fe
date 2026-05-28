@@ -44,7 +44,7 @@ export default function Page() {
               </p>
               <p className="text-title-md font-semibold leading-tight tracking-[-0.03em]">업로드하세요</p>
               <p className="pt-1 text-caption text-muted-foreground">AI가 생성했을 가능성을 분석하고</p>
-              <p className="text-caption text-muted-foreground">결과와 근거를 알려드립니다.</p>
+              <p className="text-caption text-muted-foreground">결과와 시각 관찰 포인트를 알려드립니다.</p>
             </div>
             <div className="relative size-20 shrink-0">
               <Image

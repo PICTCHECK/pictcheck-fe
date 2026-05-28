@@ -2,7 +2,7 @@
 
 import type { PictcheckAnalysisResult } from '@/src/lib/analysis/types';
 import type { PictcheckSuspicionEmptyState, RiskLevel } from '@/src/lib/risk-styles';
-import { SuspicionCard } from './suspicion-card';
+import { AnalysisCard } from '@/src/components/ui';
 import { SuspicionEmptyState } from './suspicion-empty-state';
 
 type SuspicionListProps = {
@@ -21,7 +21,13 @@ export function SuspicionList({ level, showSuspicions, suspicions, previewUrl, e
   return (
     <>
       {suspicions.map((item) => (
-        <SuspicionCard key={item.id} item={item} previewUrl={previewUrl} />
+        <AnalysisCard
+          key={item.id}
+          title={item.title}
+          description={item.detailDescription}
+          confidence={item.evidenceStrength}
+          thumbnail={previewUrl ? { src: previewUrl, area: item.area, alt: item.title } : null}
+        />
       ))}
     </>
   );

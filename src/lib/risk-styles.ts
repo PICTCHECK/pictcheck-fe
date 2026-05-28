@@ -21,13 +21,19 @@ export interface PictcheckResultDisplay {
   statusSuffix: string | null;
   /** 결과 설명 본문 */
   summary: string;
-  /** OpenAI Vision 의심 요소 목록·상세 분석 노출 여부 */
+  /** OpenAI Vision 시각적 관찰 목록·상세 분석 노출 여부 */
   showSuspicions: boolean;
 }
 
 export interface PictcheckSuspicionEmptyState {
   title: string;
   description: string;
+}
+
+export interface VisionSectionDisplay {
+  title: string;
+  detailButtonLabel: string;
+  countLabelWhenEmpty: string;
 }
 
 export type RiskBadgeVariant = 'riskHigh' | 'riskMedium' | 'riskLow';
@@ -102,76 +108,73 @@ export function createAiGenerationResult(rawScore: number): AiGenerationResult {
 const PICTCHECK_RESULT_DISPLAY: Record<RiskLevel, Record<'true' | 'false', PictcheckResultDisplay>> = {
   high: {
     true: {
-      statusLabel: 'AI 가능성 높음 · 근거 확인',
-      statusSuffix: '근거 확인',
+      statusLabel: 'AI 가능성 높음 · 시각 특징 관찰',
+      statusSuffix: '시각 특징 관찰',
       summary:
-        '외부 탐지 기준 AI 생성 가능성이 높게 분석되었습니다. 이미지에서도 AI 생성물에서 자주 보이는 시각적 의심 요소가 확인됩니다.',
+        '외부 탐지 기준 AI 생성 가능성이 확인되었고, 이미지 일부에서도 AI 생성 이미지에서 자주 보이는 시각적 특징이 관찰되었습니다.',
       showSuspicions: true,
     },
     false: {
-      statusLabel: 'AI 가능성 높음 · 시각 근거 제한적',
-      statusSuffix: '시각 근거 제한적',
+      statusLabel: 'AI 가능성 높음 · 시각 특징 제한적',
+      statusSuffix: '시각 특징 제한적',
       summary:
-        '외부 탐지 기준 AI 생성 가능성은 높게 분석되었습니다. 다만 사람이 눈으로 명확히 확인할 수 있는 시각적 의심 요소는 제한적입니다. 이미지 내부 패턴, 압축, 보정, 필터, 저해상도 등이 탐지 결과에 영향을 줬을 수 있습니다.',
+        '외부 탐지 기준으로는 AI 생성 가능성이 높게 분석되었습니다. 다만 사람이 눈으로 명확히 확인할 수 있는 시각적 특징은 제한적입니다.',
       showSuspicions: false,
     },
   },
   medium: {
     true: {
-      statusLabel: 'AI 가능성 보통 · 일부 근거 확인',
-      statusSuffix: '일부 근거 확인',
+      statusLabel: 'AI 가능성 보통 · 시각 특징 관찰',
+      statusSuffix: '시각 특징 관찰',
       summary:
-        '외부 탐지 기준 AI 생성 가능성은 보통 수준입니다. 다만 일부 영역에서 AI 생성 이미지에서 자주 보이는 시각적 특징이 확인됩니다.',
+        '외부 탐지 기준 AI 생성 가능성이 확인되었고, 이미지 일부에서도 AI 생성 이미지에서 자주 보이는 시각적 특징이 관찰되었습니다.',
       showSuspicions: true,
     },
     false: {
-      statusLabel: 'AI 가능성 보통 · 근거 제한적',
-      statusSuffix: '근거 제한적',
+      statusLabel: 'AI 가능성 보통 · 시각 특징 제한적',
+      statusSuffix: '시각 특징 제한적',
       summary:
-        '외부 탐지 기준 AI 생성 가능성은 보통 수준입니다. 다만 이미지 안에서 명확하게 설명 가능한 시각적 의심 요소는 확인되지 않았습니다.',
+        '외부 탐지 기준 AI 생성 가능성은 보통 수준입니다. 다만 사람이 눈으로 명확히 확인할 수 있는 시각적 특징은 제한적입니다.',
       showSuspicions: false,
     },
   },
   low: {
     true: {
-      statusLabel: 'AI 가능성 낮음 · 일부 의심 특징',
-      statusSuffix: '일부 의심 특징',
+      statusLabel: 'AI 가능성 낮음 · 참고 관찰 포인트',
+      statusSuffix: '참고 관찰 포인트',
       summary:
-        '외부 탐지 기준 AI 생성 가능성은 낮게 분석되었습니다. 다만 일부 영역에서 AI 생성 이미지에서 자주 보이는 시각적 특징이 관찰되어 참고용으로 확인할 수 있습니다.',
+        '외부 탐지 기준으로는 AI 생성 가능성이 낮게 분석되었습니다. 다만 이미지 일부에서 형태나 질감이 어색해 보일 수 있는 부분이 있어 참고용으로 표시했습니다. 이 항목은 AI 판정 근거가 아니라 사용자가 직접 확인할 수 있는 시각적 관찰 정보입니다.',
       showSuspicions: true,
     },
     false: {
       statusLabel: 'AI 가능성 낮음',
       statusSuffix: null,
       summary:
-        '외부 탐지 기준 AI 생성 가능성이 낮게 분석되었으며, 이미지에서도 명확한 AI 생성 의심 요소는 확인되지 않았습니다.',
+        '외부 탐지 기준으로 AI 생성 가능성이 낮게 분석되었습니다. 이미지에서도 참고할 만한 뚜렷한 시각적 특징은 제한적입니다.',
       showSuspicions: false,
     },
   },
 };
 
 /** level + suspicionDetected 조합으로 픽트체크 결과 상태·설명 반환 */
-export function getPictcheckResultDisplay(
-  level: RiskLevel,
-  suspicionDetected: boolean,
-): PictcheckResultDisplay {
+export function getPictcheckResultDisplay(level: RiskLevel, suspicionDetected: boolean): PictcheckResultDisplay {
   return PICTCHECK_RESULT_DISPLAY[level][suspicionDetected ? 'true' : 'false'];
 }
 
-/** 의심 요소 미탐지 시 핵심 의심 요소 섹션 빈 상태 (level별 톤·문구) */
+/** 시각적 관찰 포인트 미노출 시 빈 상태 (level별 톤·문구) */
 const PICTCHECK_SUSPICION_EMPTY: Record<RiskLevel, PictcheckSuspicionEmptyState> = {
   high: {
-    title: '시각적 의심 요소 제한적',
+    title: '시각적 특징이 제한적이에요',
     description:
-      '눈으로 명확히 확인할 수 있는 AI 생성 의심 요소는 찾지 못했습니다. 외부 탐지 수치는 참고해 주세요.',
+      '외부 탐지 기준으로는 AI 생성 가능성이 높지만, 사람이 눈으로 확인할 수 있는 시각적 특징은 제한적입니다.',
   },
   medium: {
-    title: '명확한 의심 요소 없음',
-    description: '이미지 안에서 설명 가능한 시각적 의심 요소는 확인되지 않았습니다.',
+    title: '뚜렷한 시각 특징이 없어요',
+    description: '외부 탐지 기준은 보통 수준이며, 이미지에서 사람이 확인할 만한 시각적 특징은 제한적입니다.',
   },
   low: {
-    title: 'AI 흔적을 찾지 못했어요',
-    description: '이미지에서 AI 생성물에서 자주 보이는 시각적 의심 요소는 확인되지 않았습니다.',
+    title: '참고할 시각 특징이 거의 없어요',
+    description: '외부 탐지 기준으로는 AI 생성 가능성이 낮게 분석되었습니다.',
   },
 };
 
@@ -180,7 +183,22 @@ export function getPictcheckSuspicionEmptyState(level: RiskLevel): PictcheckSusp
 }
 
 export function formatSuspicionCountLabel(count: number, showSuspicions: boolean): string {
-  if (!showSuspicions) return '탐지 없음';
-  return `${count}개 탐지`;
+  if (!showSuspicions) return '표시 없음';
+  return `${count}개 표시`;
 }
 
+export function getVisionSectionDisplay(level: RiskLevel): VisionSectionDisplay {
+  if (level === 'low') {
+    return {
+      title: '참고할 만한 시각적 특징',
+      detailButtonLabel: '관찰 영역 자세히 보기 →',
+      countLabelWhenEmpty: '표시 없음',
+    };
+  }
+
+  return {
+    title: '의심 요소',
+    detailButtonLabel: '의심 요소 자세히 보기 →',
+    countLabelWhenEmpty: '표시 없음',
+  };
+}

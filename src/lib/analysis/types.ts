@@ -14,15 +14,15 @@ export interface SuspicionMarker {
 }
 
 export type VisionSuspicionCategory = 'anatomy' | 'lighting' | 'texture' | 'background' | 'artifact' | 'text';
+export type VisionEvidenceStrength = 'low' | 'medium' | 'high';
 
 export interface VisionSuspicion {
   id: string;
   title: string;
   description: string;
   detailDescription: string;
-  technicalReason: string;
-  riskLevel: RiskLevel;
-  confidence: number;
+  technicalReason?: string;
+  evidenceStrength: VisionEvidenceStrength;
   category: VisionSuspicionCategory;
   area: SuspicionArea;
   marker: SuspicionMarker;

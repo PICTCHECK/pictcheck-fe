@@ -45,7 +45,7 @@ export function Tabs<T extends string>({
             onClick={() => onChange(option.value)}
             className={tabTriggerVariants({ active })}
           >
-            <span className="block max-w-[96px] overflow-hidden text-ellipsis whitespace-nowrap">{option.label}</span>
+            <span className="block whitespace-nowrap">{option.label}</span>
           </button>
         );
       })}
