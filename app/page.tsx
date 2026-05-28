@@ -19,7 +19,7 @@ const ANALYSIS_ITEMS = [
   { label: '구조적 왜곡 및 이상 여부 확인', icon: Cuboid },
 ];
 
-export default function HomePage() {
+export default function Page() {
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const { file, previewUrl, dimensions, setFile, clearFile } = useUploadImage();
 
