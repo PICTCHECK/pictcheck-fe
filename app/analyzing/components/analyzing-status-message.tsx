@@ -1,24 +1,46 @@
-const WAITING_MESSAGES = [
-  '마지막 의심 요소를 정리하고 있어요',
-  '분석 결과를 정리하는 중입니다',
-  '조금만 기다려주세요. 결과를 확인하고 있어요',
-] as const;
+'use client';
 
-type Props = {
-  isFinalizing: boolean;
-  waitingMessageIndex: number;
+import { useEffect, useState } from 'react';
+import {
+  ANALYZING_STEP_MESSAGE_VARIANTS,
+  ANALYZING_STEP_SECONDARY_MESSAGE,
+} from '../constants/analyzing-status';
+import type { AnalyzingStep } from '../lib/analyzing-progress-tick';
+
+const MESSAGE_ROTATION_MS_BY_STEP: Record<AnalyzingStep, number> = {
+  preparing: 2400,
+  detecting: 2600,
+  inspecting: 2800,
+  finalizing: 2000,
 };
 
-export function AnalyzingStatusMessage({ isFinalizing, waitingMessageIndex }: Props) {
-  const waitingMessage = WAITING_MESSAGES[waitingMessageIndex % WAITING_MESSAGES.length];
+type Props = {
+  currentStep: AnalyzingStep;
+};
+
+export function AnalyzingStatusMessage({ currentStep }: Props) {
+  const [variantIndex, setVariantIndex] = useState(0);
+  const variants = ANALYZING_STEP_MESSAGE_VARIANTS[currentStep];
+  const primaryMessage = variants[variantIndex % variants.length];
+  const secondaryMessage = ANALYZING_STEP_SECONDARY_MESSAGE[currentStep];
+  const showPulse = currentStep === 'inspecting' || currentStep === 'finalizing';
+
+  useEffect(() => {
+    if (variants.length <= 1) return;
+
+    const intervalMs = MESSAGE_ROTATION_MS_BY_STEP[currentStep];
+    const timerId = setInterval(() => {
+      setVariantIndex((prev) => (prev + 1) % variants.length);
+    }, intervalMs);
+
+    return () => clearInterval(timerId);
+  }, [currentStep, variants.length]);
 
   return (
     <div className="mt-12 space-y-1 rounded-2xl border border-primary-100 bg-primary-100/20 px-4 py-3 text-center text-caption text-muted-foreground">
-      <p>{isFinalizing ? waitingMessage : 'AI 흔적을 분석하고 있습니다.'}</p>
-      <p>
-        {isFinalizing ? '분석 완료 전까지 잠시만 기다려주세요' : '분석에는 보통 3~8초 정도 소요될 수 있습니다'}
-      </p>
-      {isFinalizing ? (
+      <p>{primaryMessage}</p>
+      <p>{secondaryMessage}</p>
+      {showPulse ? (
         <div className="flex items-center justify-center gap-1 pt-1" aria-label="로딩 중">
           <span className="size-1.5 rounded-full bg-primary-500/70 animate-pulse" />
           <span className="size-1.5 rounded-full bg-primary-500/70 animate-pulse [animation-delay:160ms]" />

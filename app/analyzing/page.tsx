@@ -7,7 +7,7 @@ import { AnalyzingStepList } from './components/analyzing-step-list';
 import { useAnalyzingProgress } from './hooks/use-analyzing-progress';
 
 export default function Page() {
-  const { file, progress, isFinalizing, waitingMessageIndex } = useAnalyzingProgress();
+  const { file, progress, currentStep } = useAnalyzingProgress();
 
   if (!file) return null;
 
@@ -26,7 +26,7 @@ export default function Page() {
         </div>
 
         <AnalyzingStepList progress={progress} />
-        <AnalyzingStatusMessage isFinalizing={isFinalizing} waitingMessageIndex={waitingMessageIndex} />
+        <AnalyzingStatusMessage key={currentStep} currentStep={currentStep} />
       </section>
     </main>
   );

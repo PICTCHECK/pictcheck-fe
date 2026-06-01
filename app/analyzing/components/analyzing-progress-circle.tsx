@@ -40,7 +40,7 @@ export function AnalyzingProgressCircle({ progress }: { progress: number }) {
           strokeLinecap="round"
           strokeDasharray={CIRCUMFERENCE}
           animate={{ strokeDashoffset: strokeOffset }}
-          transition={{ duration: 0.22, ease: 'easeOut' }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
           filter="url(#analyzing-progress-glow)"
           fill="none"
         />

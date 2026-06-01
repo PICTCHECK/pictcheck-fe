@@ -1,24 +1,77 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUploadImage } from '@/src/components/providers/upload-image-provider';
 import { toastError } from '@/src/components/ui';
 import { analyzeImage } from '@/src/lib/analysis/analyze-image';
 import { getUploadErrorMessage } from '@/src/lib/upload-errors';
+import {
+  buildCompletionProgressSteps,
+  computeAnalyzingProgressTick,
+  getAnalyzingStep,
+  getCompletionStepDelayMs,
+  getNextProgressValue,
+  type AnalyzingStep,
+} from '../lib/analyzing-progress-tick';
 
-const FAST_PROGRESS_CAP = 95;
-const FINAL_PROGRESS_CAP = 99;
+const REDIRECT_AFTER_COMPLETE_MS = 500;
+
 const inFlightAnalyses = new Map<string, Promise<Awaited<ReturnType<typeof analyzeImage>>>>();
+
+function advanceProgressThroughSteps(
+  from: number,
+  onUpdate: (value: number) => void,
+): { promise: Promise<void>; cancel: () => void } {
+  const steps = buildCompletionProgressSteps(from);
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  let cancelled = false;
+  let resolvePromise: (() => void) | undefined;
+
+  const promise = new Promise<void>((resolve) => {
+    resolvePromise = resolve;
+
+    const runStep = (index: number) => {
+      if (cancelled || index >= steps.length) {
+        resolve();
+        return;
+      }
+
+      timeoutId = setTimeout(() => {
+        if (cancelled) {
+          resolve();
+          return;
+        }
+
+        onUpdate(steps[index]);
+        runStep(index + 1);
+      }, getCompletionStepDelayMs(index, steps.length));
+    };
+
+    runStep(0);
+  });
+
+  return {
+    promise,
+    cancel: () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+      resolvePromise?.();
+    },
+  };
+}
+
+export type { AnalyzingStep };
 
 export function useAnalyzingProgress() {
   const router = useRouter();
   const { file, setAnalysisResult } = useUploadImage();
   const [progress, setProgress] = useState(0);
-  const [waitingMessageIndex, setWaitingMessageIndex] = useState(0);
   const progressRef = useRef(0);
   const hasStartedAnalysisRef = useRef(false);
   const hasRedirectedRef = useRef(false);
+
+  const currentStep = useMemo(() => getAnalyzingStep(progress), [progress]);
 
   useEffect(() => {
     if (file || hasRedirectedRef.current) return;
@@ -35,10 +88,10 @@ export function useAnalyzingProgress() {
     let isAnalysisSettled = false;
     let shouldPreserveStartedRef = false;
     let progressTimerId: ReturnType<typeof setTimeout> | undefined;
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let redirectTimerId: ReturnType<typeof setTimeout> | undefined;
+    let cancelCompletionProgress: (() => void) | undefined;
     progressRef.current = 0;
     setProgress(0);
-    setWaitingMessageIndex(0);
 
     const analysisPromise = (() => {
       const existing = inFlightAnalyses.get(analysisKey);
@@ -51,32 +104,19 @@ export function useAnalyzingProgress() {
 
     const scheduleProgressTick = () => {
       if (isCancelled || isAnalysisSettled) return;
-      if (progressRef.current >= FINAL_PROGRESS_CAP) return;
 
-      const isFastPhase = progressRef.current < FAST_PROGRESS_CAP;
-      const delayMs = isFastPhase
-        ? Math.round(80 + (progressRef.current / FAST_PROGRESS_CAP) ** 2 * 420)
-        : 700;
+      const tick = computeAnalyzingProgressTick(progressRef.current);
+      if (!tick) return;
 
       progressTimerId = setTimeout(() => {
         if (isCancelled || isAnalysisSettled) return;
 
-        setProgress((prev) => {
-          const cap = prev < FAST_PROGRESS_CAP ? FAST_PROGRESS_CAP : FINAL_PROGRESS_CAP;
-          const remaining = cap - prev;
-          if (remaining <= 0) {
-            progressRef.current = cap;
-            return cap;
-          }
-
-          const step = prev < FAST_PROGRESS_CAP ? Math.max(1, Math.round(remaining * 0.14)) : 1;
-          const next = Math.min(cap, prev + step);
-          progressRef.current = next;
-          return next;
-        });
+        const next = getNextProgressValue(progressRef.current, tick.increment);
+        progressRef.current = next;
+        setProgress(next);
 
         scheduleProgressTick();
-      }, delayMs);
+      }, tick.delayMs);
     };
 
     const runAnalysis = async () => {
@@ -87,15 +127,24 @@ export function useAnalyzingProgress() {
 
         isAnalysisSettled = true;
         if (progressTimerId) clearTimeout(progressTimerId);
-        progressRef.current = 100;
-        setProgress(100);
+
+        const completion = advanceProgressThroughSteps(progressRef.current, (value) => {
+          progressRef.current = value;
+          setProgress(value);
+        });
+        cancelCompletionProgress = completion.cancel;
+
+        await completion.promise;
+        if (isCancelled) return;
+
         setAnalysisResult(result);
         shouldPreserveStartedRef = true;
-        timeoutId = setTimeout(() => router.push('/result'), 500);
+        redirectTimerId = setTimeout(() => router.push('/result'), REDIRECT_AFTER_COMPLETE_MS);
       } catch (error) {
         if (isCancelled) return;
         isAnalysisSettled = true;
         if (progressTimerId) clearTimeout(progressTimerId);
+        if (cancelCompletionProgress) cancelCompletionProgress();
         console.error('analyzeImage failed:', error);
         const toastMessage =
           error instanceof TypeError
@@ -117,24 +166,13 @@ export function useAnalyzingProgress() {
       isCancelled = true;
       isAnalysisSettled = true;
       if (progressTimerId) clearTimeout(progressTimerId);
-      if (timeoutId) clearTimeout(timeoutId);
+      if (redirectTimerId) clearTimeout(redirectTimerId);
+      if (cancelCompletionProgress) cancelCompletionProgress();
       if (!shouldPreserveStartedRef) {
         hasStartedAnalysisRef.current = false;
       }
     };
   }, [file, router, setAnalysisResult]);
 
-  const isFinalizing = progress >= FAST_PROGRESS_CAP && progress < 100;
-
-  useEffect(() => {
-    if (!isFinalizing) return;
-
-    const waitingMessageTimer = setInterval(() => {
-      setWaitingMessageIndex((prev) => (prev + 1) % 3);
-    }, 1800);
-
-    return () => clearInterval(waitingMessageTimer);
-  }, [isFinalizing]);
-
-  return { file, progress, isFinalizing, waitingMessageIndex };
+  return { file, progress, currentStep };
 }
