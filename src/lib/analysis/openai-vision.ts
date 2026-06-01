@@ -31,6 +31,7 @@ const FALLBACK_TITLE_BY_CATEGORY: Record<VisionSuspicionCategory, string> = {
 };
 const EASY_KOREAN_REPLACEMENTS: Array<[RegExp, string]> = [
   [/diffusion artifact/gi, '번진 흔적'],
+  [/\bdiffusion\b/gi, '디퓨전'],
   [/artifact/gi, '번진 흔적'],
   [/smoothing/gi, '매끈한 느낌'],
   [/texture/gi, '질감'],
@@ -38,9 +39,32 @@ const EASY_KOREAN_REPLACEMENTS: Array<[RegExp, string]> = [
   [/inconsistency/gi, '불일치'],
   [/reflection inconsistency/gi, '반사 어색함'],
   [/reflection/gi, '반사'],
-  [/fusion/gi, '붙어 보임'],
+  [/\bfusion\b/gi, '붙어 보임'],
   [/consistency/gi, '일관성'],
 ];
+
+/** English strip or model output can leave "가 …", "는 …" with no subject. */
+function repairLeadingOrphanParticle(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  if (/^[가-힣]{2,}(?:은|는|이|가)\s/.test(trimmed) || /^AI(?:은|는|이|가)\s/.test(trimmed)) {
+    return trimmed;
+  }
+
+  const orphanMatch = trimmed.match(/^(는|은|가|이|을|를)\s+/);
+  if (!orphanMatch) {
+    return trimmed;
+  }
+
+  const particle = orphanMatch[1];
+  const rest = trimmed.slice(orphanMatch[0].length);
+  const subject = particle === '가' || particle === '이' ? '생성 AI' : 'AI 생성 이미지';
+
+  return `${subject}${particle} ${rest}`;
+}
 
 function toSimpleKoreanText(text: string): string {
   return EASY_KOREAN_REPLACEMENTS.reduce(
@@ -84,11 +108,13 @@ function normalizeTitle(title: string, category: VisionSuspicionCategory): strin
 }
 
 function normalizeUserFacingSentence(text: string): string {
-  const simplified = toSimpleKoreanText(text)
-    .replace(/[。]/g, '.')
-    .replace(/\s*\n+\s*/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+  const simplified = repairLeadingOrphanParticle(
+    toSimpleKoreanText(text)
+      .replace(/[。]/g, '.')
+      .replace(/\s*\n+\s*/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim(),
+  );
   if (!simplified) {
     return simplified;
   }
@@ -124,37 +150,29 @@ function splitSentences(text: string): string[] {
     .filter(Boolean);
 }
 
-function normalizeDetailDescription(text: string): string {
+const MAX_DESCRIPTION_SENTENCES = 2;
+const MAX_DETAIL_DESCRIPTION_SENTENCES = 3;
+
+function limitSentences(text: string, maxSentences: number): string {
   const normalized = normalizeUserFacingSentence(text);
   if (!normalized) {
     return normalized;
   }
 
   const sentences = splitSentences(normalized);
-  if (sentences.length <= 2) {
+  if (sentences.length <= maxSentences) {
     return normalized;
   }
 
-  return sentences.slice(0, 2).join(' ');
+  return sentences.slice(0, maxSentences).join(' ');
 }
 
-function normalizeTechnicalReason(text: string): string {
-  const simplified = toSimpleKoreanText(text)
-    .replace(/[A-Za-z]+/g, ' ')
-    .replace(/[。]/g, '.')
-    .replace(/\s*\n+\s*/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/([.!?])\s*\1+/g, '$1')
-    .trim();
+function normalizeDescription(text: string): string {
+  return limitSentences(text, MAX_DESCRIPTION_SENTENCES);
+}
 
-  if (!simplified) {
-    return '';
-  }
-
-  const normalized = normalizeUserFacingSentence(simplified);
-  const sentences = splitSentences(normalized);
-
-  return sentences.slice(0, 3).join(' ');
+function normalizeDetailDescription(text: string): string {
+  return limitSentences(text, MAX_DETAIL_DESCRIPTION_SENTENCES);
 }
 
 function clampPercent(value: number): number {
@@ -183,21 +201,6 @@ function getAreaCenter(area: SuspicionArea): { x: number; y: number } {
 }
 
 function normalizeMarker(area: SuspicionArea, marker: SuspicionMarker): SuspicionMarker {
-  const normalizedX = clampPercent(marker.x);
-  const normalizedY = clampPercent(marker.y);
-  const areaEndX = area.x + area.width;
-  const areaEndY = area.y + area.height;
-  const markerInsideArea =
-    normalizedX >= area.x && normalizedX <= areaEndX && normalizedY >= area.y && normalizedY <= areaEndY;
-
-  if (markerInsideArea) {
-    return {
-      index: marker.index,
-      x: normalizedX,
-      y: normalizedY,
-    };
-  }
-
   const center = getAreaCenter(area);
   return {
     index: marker.index,
@@ -283,31 +286,25 @@ function toVisionSuspicion(value: unknown, index: number): VisionSuspicion | nul
   const category = normalizeCategory(value.category);
   const id = readString(value.id) || `vision-suspicion-${safeIndex}`;
   const title = normalizeTitle(readString(value.title), category);
-  const description = normalizeUserFacingSentence(readString(value.description));
+  const rawDescription = readString(value.description);
   const rawDetailDescription = readString(value.detailDescription);
-  const rawTechnicalReason = readString(value.technicalReason);
-  const detailDescriptionBase = rawDetailDescription || description;
-  let detailDescription = normalizeDetailDescription(detailDescriptionBase);
-  let technicalReason = normalizeTechnicalReason(rawTechnicalReason);
+  let description = normalizeDescription(rawDescription);
+  let detailDescription = normalizeDetailDescription(rawDetailDescription);
 
-  if (!technicalReason && rawDetailDescription) {
-    const detailSentences = splitSentences(normalizeUserFacingSentence(rawDetailDescription));
-    if (detailSentences.length > 2) {
-      technicalReason = normalizeTechnicalReason(detailSentences.slice(1).join(' '));
-    }
-  }
-
-  if (technicalReason && detailDescription.length >= technicalReason.length) {
+  if (!description && detailDescription) {
     const detailSentences = splitSentences(detailDescription);
-    technicalReason = normalizeTechnicalReason(technicalReason);
-    if (detailSentences.length >= 1) {
-      const shortenedDetail = normalizeDetailDescription(detailSentences[0]);
-      detailDescription = shortenedDetail || detailDescription;
-    }
+    description = normalizeDescription(detailSentences[0] ?? detailDescription);
   }
 
-  if (technicalReason && technicalReason === detailDescription) {
-    technicalReason = '';
+  if (!detailDescription && description) {
+    detailDescription = normalizeDetailDescription(description);
+  }
+
+  if (description && detailDescription && description === detailDescription) {
+    const detailSentences = splitSentences(detailDescription);
+    if (detailSentences.length > 1) {
+      description = normalizeDescription(detailSentences[0]);
+    }
   }
   const priority = readNumber(value.priority, safeIndex);
   const evidenceStrength = normalizeEvidenceStrength(
@@ -323,7 +320,6 @@ function toVisionSuspicion(value: unknown, index: number): VisionSuspicion | nul
     title,
     description,
     detailDescription,
-    technicalReason: technicalReason || undefined,
     evidenceStrength,
     category,
     area,

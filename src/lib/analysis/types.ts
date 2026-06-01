@@ -21,7 +21,6 @@ export interface VisionSuspicion {
   title: string;
   description: string;
   detailDescription: string;
-  technicalReason?: string;
   evidenceStrength: VisionEvidenceStrength;
   category: VisionSuspicionCategory;
   area: SuspicionArea;
