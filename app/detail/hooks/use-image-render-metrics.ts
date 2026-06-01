@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { calculateContainedImageRect } from '../utils/image-coordinate';
+import { calculateContainedImageRect } from '@/src/lib/image-coordinate';
 
 type Size = { width: number; height: number };
 
