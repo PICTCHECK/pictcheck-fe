@@ -24,7 +24,7 @@ export function SuspicionList({ level, showSuspicions, suspicions, previewUrl, e
         <AnalysisCard
           key={item.id}
           title={item.title}
-          description={item.detailDescription}
+          description={item.description}
           confidence={item.evidenceStrength}
           thumbnail={previewUrl ? { src: previewUrl, area: item.area, alt: item.title } : null}
         />

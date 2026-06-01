@@ -39,10 +39,10 @@ export default function Page() {
         <Card className="overflow-hidden p-0">
           <div className="flex items-center justify-between bg-linear-to-r from-primary-100/60 to-white px-4 py-4">
             <div className="space-y-1">
-              <p className="text-title-lg font-semibold leading-tight tracking-[-0.03em] text-primary-600">
+              <p className="text-title-md font-semibold leading-tight tracking-[-0.03em] text-primary-600">
                 AI로 의심되는 사진을
               </p>
-              <p className="text-title-md font-semibold leading-tight tracking-[-0.03em]">업로드하세요</p>
+              <p className="text-title-sm font-semibold leading-tight tracking-[-0.03em]">업로드하세요</p>
               <p className="pt-1 text-caption text-muted-foreground">AI가 생성했을 가능성을 분석하고</p>
               <p className="text-caption text-muted-foreground">결과와 시각 관찰 포인트를 알려드립니다.</p>
             </div>

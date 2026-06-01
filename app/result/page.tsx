@@ -35,13 +35,12 @@ export default function Page() {
     <main className="mx-auto min-h-screen w-full max-w-[390px] bg-background">
       <Header title="분석 결과" />
       <div className="space-y-4 px-4 pb-8 pt-4">
-        <p className="text-center text-body-sm text-muted-foreground">AI 생성 가능성 결과 및 시각 관찰 요약</p>
+        <p className="text-center text-body-sm text-muted-foreground">AI 가능성 결과 및 의심 요소 요약</p>
 
         <ResultSummaryCard
           score={score}
           level={level}
           statusLabel={resultDisplay.statusLabel}
-          statusSuffix={resultDisplay.statusSuffix}
           summary={resultDisplay.summary}
         />
 

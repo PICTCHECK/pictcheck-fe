@@ -15,10 +15,8 @@ export interface AiGenerationResult {
 }
 
 export interface PictcheckResultDisplay {
-  /** 픽트체크 표시 상태 전체 (접근성·메타) */
+  /** 결과 카드 제목 (예: AI 가능성 높음 · 의심 요소 확인) */
   statusLabel: string;
-  /** "AI 가능성 {단계}" 뒤 · 접미사. 낮음·미탐지 등 접미사 없는 경우 null */
-  statusSuffix: string | null;
   /** 결과 설명 본문 */
   summary: string;
   /** OpenAI Vision 시각적 관찰 목록·상세 분석 노출 여부 */
@@ -108,49 +106,43 @@ export function createAiGenerationResult(rawScore: number): AiGenerationResult {
 const PICTCHECK_RESULT_DISPLAY: Record<RiskLevel, Record<'true' | 'false', PictcheckResultDisplay>> = {
   high: {
     true: {
-      statusLabel: 'AI 가능성 높음 · 시각 특징 관찰',
-      statusSuffix: '시각 특징 관찰',
+      statusLabel: 'AI 가능성 높음 · 의심 요소 확인',
       summary:
-        '외부 탐지 기준 AI 생성 가능성이 확인되었고, 이미지 일부에서도 AI 생성 이미지에서 자주 보이는 시각적 특징이 관찰되었습니다.',
+        '외부 탐지 기준 AI 생성 가능성이 높게 분석되었습니다. 이미지에서도 AI 생성 이미지에서 자주 나타나는 의심 요소가 확인되었습니다.',
       showSuspicions: true,
     },
     false: {
-      statusLabel: 'AI 가능성 높음 · 시각 특징 제한적',
-      statusSuffix: '시각 특징 제한적',
+      statusLabel: 'AI 가능성 높음 · 근거 확인 어려움',
       summary:
-        '외부 탐지 기준으로는 AI 생성 가능성이 높게 분석되었습니다. 다만 사람이 눈으로 명확히 확인할 수 있는 시각적 특징은 제한적입니다.',
+        '외부 탐지 기준 AI 생성 가능성이 높게 분석되었습니다. 다만 사람이 눈으로 확인할 수 있는 뚜렷한 의심 요소는 제한적입니다.',
       showSuspicions: false,
     },
   },
   medium: {
     true: {
-      statusLabel: 'AI 가능성 보통 · 시각 특징 관찰',
-      statusSuffix: '시각 특징 관찰',
+      statusLabel: 'AI 가능성 보통 · 의심 요소 확인',
       summary:
-        '외부 탐지 기준 AI 생성 가능성이 확인되었고, 이미지 일부에서도 AI 생성 이미지에서 자주 보이는 시각적 특징이 관찰되었습니다.',
+        '외부 탐지 기준 AI 생성 가능성이 보통 수준으로 분석되었습니다. 이미지 일부에서 AI 생성 이미지에서 자주 나타나는 의심 요소가 확인되었습니다.',
       showSuspicions: true,
     },
     false: {
-      statusLabel: 'AI 가능성 보통 · 시각 특징 제한적',
-      statusSuffix: '시각 특징 제한적',
+      statusLabel: 'AI 가능성 보통 · 근거 확인 어려움',
       summary:
-        '외부 탐지 기준 AI 생성 가능성은 보통 수준입니다. 다만 사람이 눈으로 명확히 확인할 수 있는 시각적 특징은 제한적입니다.',
+        '외부 탐지 기준 AI 생성 가능성은 보통 수준입니다. 다만 사람이 눈으로 확인할 수 있는 뚜렷한 의심 요소는 제한적입니다.',
       showSuspicions: false,
     },
   },
   low: {
     true: {
-      statusLabel: 'AI 가능성 낮음 · 참고 관찰 포인트',
-      statusSuffix: '참고 관찰 포인트',
+      statusLabel: 'AI 가능성 낮음 · 참고 요소 발견',
       summary:
-        '외부 탐지 기준으로는 AI 생성 가능성이 낮게 분석되었습니다. 다만 이미지 일부에서 형태나 질감이 어색해 보일 수 있는 부분이 있어 참고용으로 표시했습니다. 이 항목은 AI 판정 근거가 아니라 사용자가 직접 확인할 수 있는 시각적 관찰 정보입니다.',
+        '외부 탐지 기준 AI 생성 가능성은 낮게 분석되었습니다. 다만 일부 영역에서 참고할 만한 시각적 요소가 발견되어 함께 표시했습니다.',
       showSuspicions: true,
     },
     false: {
       statusLabel: 'AI 가능성 낮음',
-      statusSuffix: null,
       summary:
-        '외부 탐지 기준으로 AI 생성 가능성이 낮게 분석되었습니다. 이미지에서도 참고할 만한 뚜렷한 시각적 특징은 제한적입니다.',
+        '외부 탐지 기준 AI 생성 가능성이 낮게 분석되었습니다. 이미지에서도 뚜렷한 의심 요소는 확인되지 않았습니다.',
       showSuspicions: false,
     },
   },
