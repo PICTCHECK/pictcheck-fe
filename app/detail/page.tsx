@@ -36,7 +36,10 @@ export default function Page() {
     () => suspicions.find((item) => item.id === activeTab) ?? suspicions[0],
     [activeTab, suspicions],
   );
-  const tabOptions = useMemo(() => suspicions.map((item) => ({ label: item.title, value: item.id })), [suspicions]);
+  const tabOptions = useMemo(
+    () => suspicions.map((item) => ({ label: item.title, value: item.id, index: item.marker.index })),
+    [suspicions],
+  );
   if (!analysisResult || !current) return null;
   const isLowLevel = analysisResult.sightengine.level === 'low';
 
@@ -46,11 +49,16 @@ export default function Page() {
       <div className="space-y-4 px-4 pb-8 pt-4">
         <p className="text-center text-body-sm text-muted-foreground">시각적 관찰 포인트와 확인 영역 안내</p>
 
-        <DetailImageViewer previewUrl={previewUrl} suspicions={suspicions} />
+        <DetailImageViewer
+          previewUrl={previewUrl}
+          suspicions={suspicions}
+          activeSuspicionId={activeTab}
+          onSuspicionSelect={setTab}
+        />
         <Tabs value={activeTab} onChange={setTab} options={tabOptions} />
         <AnalysisCard
           title={current.title}
-          description={current.technicalReason ?? current.detailDescription}
+          description={current.detailDescription}
           confidence={current.evidenceStrength}
           thumbnail={previewUrl ? { src: previewUrl, area: current.area, alt: current.title } : null}
         />

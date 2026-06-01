@@ -8,6 +8,7 @@ interface SuspicionMarkerProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   y: number;
   index: number;
   coordinateUnit?: 'percent' | 'pixel';
+  active?: boolean;
 }
 
 export function SuspicionMarker({
@@ -15,6 +16,7 @@ export function SuspicionMarker({
   y,
   index,
   coordinateUnit = 'percent',
+  active = false,
   className,
   style,
   ...props
@@ -27,6 +29,7 @@ export function SuspicionMarker({
       type="button"
       className={cn(
         "absolute flex size-6 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white bg-semantic-error text-label-sm text-white shadow-md transition-transform hover:scale-105 focus-visible:outline-none focus-visible:shadow-focus",
+        active && "z-10 ring-2 ring-white/90 shadow-lg",
         className,
       )}
       style={{

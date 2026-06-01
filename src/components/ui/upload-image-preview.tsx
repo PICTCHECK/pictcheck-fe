@@ -1,6 +1,6 @@
 "use client";
 
-import type { RefObject, SyntheticEvent } from 'react';
+import type { ReactNode, RefObject, SyntheticEvent } from 'react';
 import { motion } from "framer-motion";
 import { cn } from "@/src/lib/cn";
 
@@ -11,9 +11,18 @@ interface UploadImagePreviewProps {
   layoutId?: string;
   containerRef?: RefObject<HTMLDivElement | null>;
   onImageLoad?: (event: SyntheticEvent<HTMLImageElement>) => void;
+  children?: ReactNode;
 }
 
-export function UploadImagePreview({ src, alt, className, layoutId, containerRef, onImageLoad }: UploadImagePreviewProps) {
+export function UploadImagePreview({
+  src,
+  alt,
+  className,
+  layoutId,
+  containerRef,
+  onImageLoad,
+  children,
+}: UploadImagePreviewProps) {
   const image = (
     // eslint-disable-next-line @next/next/no-img-element -- blob URL preview requires native img
     <img src={src} alt={alt} className="h-full w-full object-contain object-center" onLoad={onImageLoad} />
@@ -34,6 +43,7 @@ export function UploadImagePreview({ src, alt, className, layoutId, containerRef
       ) : (
         <div className="absolute inset-0">{image}</div>
       )}
+      {children ? <div className="pointer-events-none absolute inset-0 z-10">{children}</div> : null}
     </div>
   );
 }

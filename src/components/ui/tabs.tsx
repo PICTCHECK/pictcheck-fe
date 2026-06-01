@@ -4,7 +4,7 @@ import { cva } from "class-variance-authority";
 import { cn } from "@/src/lib/cn";
 
 interface TabsProps<T extends string> {
-  options: Array<{ label: string; value: T }>;
+  options: Array<{ label: string; value: T; index?: number }>;
   value: T;
   onChange: (value: T) => void;
   className?: string;
@@ -45,7 +45,20 @@ export function Tabs<T extends string>({
             onClick={() => onChange(option.value)}
             className={tabTriggerVariants({ active })}
           >
-            <span className="block whitespace-nowrap">{option.label}</span>
+            <span className="flex items-center gap-1.5">
+              {option.index != null ? (
+                <span
+                  className={cn(
+                    'flex size-5 shrink-0 items-center justify-center rounded-full border border-white bg-semantic-error text-[10px] font-bold text-white shadow-sm',
+                    active && 'ring-2 ring-primary-600/30',
+                  )}
+                  aria-hidden
+                >
+                  {option.index}
+                </span>
+              ) : null}
+              <span className="block whitespace-nowrap">{option.label}</span>
+            </span>
           </button>
         );
       })}

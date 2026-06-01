@@ -8,25 +8,39 @@ import { SuspicionMarkerLayer } from './suspicion-marker-layer';
 type DetailImageViewerProps = {
   previewUrl: string | null;
   suspicions: PictcheckAnalysisResult['vision']['suspicions'];
+  activeSuspicionId?: string;
+  onSuspicionSelect?: (id: string) => void;
 };
 
-export function DetailImageViewer({ previewUrl, suspicions }: DetailImageViewerProps) {
+export function DetailImageViewer({
+  previewUrl,
+  suspicions,
+  activeSuspicionId,
+  onSuspicionSelect,
+}: DetailImageViewerProps) {
   const { containerRef, handleImageLoad, containedRect, ready } = useImageRenderMetrics();
 
   return (
     <Card className="p-2">
       {previewUrl ? (
-        <div className="relative">
-          <UploadImagePreview
-            src={previewUrl}
-            alt="상세 분석 이미지"
-            containerRef={containerRef}
-            onImageLoad={handleImageLoad}
-          />
+        <UploadImagePreview
+          src={previewUrl}
+          alt="상세 분석 이미지"
+          containerRef={containerRef}
+          onImageLoad={handleImageLoad}
+        >
           {ready
-            ? suspicions.map((item) => <SuspicionMarkerLayer key={item.id} item={item} containedRect={containedRect} />)
+            ? suspicions.map((item) => (
+                <SuspicionMarkerLayer
+                  key={item.id}
+                  item={item}
+                  containedRect={containedRect}
+                  active={item.id === activeSuspicionId}
+                  onSelect={onSuspicionSelect}
+                />
+              ))
             : null}
-        </div>
+        </UploadImagePreview>
       ) : (
         <div className="aspect-square w-full rounded-xl bg-gray-100" />
       )}
