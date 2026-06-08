@@ -2,8 +2,8 @@
 
 import type { PictcheckAnalysisResult } from '@/src/lib/analysis/types';
 import { SuspicionMarker } from '@/src/components/ui';
+import type { ContainedImageRect } from '@/src/lib/image-coordinate';
 import { getMarkerPosition } from '../utils/marker-position';
-import type { ContainedImageRect } from '../utils/image-coordinate';
 
 type SuspicionMarkerLayerProps = {
   item: PictcheckAnalysisResult['vision']['suspicions'][number];

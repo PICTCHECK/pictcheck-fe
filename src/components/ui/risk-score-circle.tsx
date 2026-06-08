@@ -1,15 +1,17 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
-import { cn } from "@/src/lib/cn";
+import { useId } from 'react';
+import { motion } from 'framer-motion';
+import { cn } from '@/src/lib/cn';
+import { getRoundCapAdjustedArcPercent } from '@/src/lib/circular-progress';
 import {
   clampAiScore,
   deriveRiskLevel,
-  getRiskStyles,
+  getRiskGaugeGradient,
   type RiskLevel,
-} from "@/src/lib/risk-styles";
+} from '@/src/lib/risk-styles';
 
-type RiskScoreCircleSize = "sm" | "md" | "lg";
+type RiskScoreCircleSize = 'sm' | 'md' | 'lg';
 
 interface RiskScoreCircleProps {
   /** Sightengine AI 생성 가능성 (0~100) — progress */
@@ -22,68 +24,68 @@ interface RiskScoreCircleProps {
   className?: string;
 }
 
-function getVisualProgress(score: number) {
-  if (score >= 100) return 100;
-  if (score >= 99) return 96;
-  return score;
-}
-
 const SIZE_CONFIG: Record<
   RiskScoreCircleSize,
   { diameter: number; strokeWidth: number; valueClass: string; percentClass: string }
 > = {
   sm: {
     diameter: 64,
-    strokeWidth: 5,
-    valueClass: "text-xl font-bold",
-    percentClass: "text-body-sm font-bold",
+    strokeWidth: 6,
+    valueClass: 'text-xl font-bold',
+    percentClass: 'text-body-sm font-bold',
   },
   md: {
     diameter: 96,
-    strokeWidth: 6,
-    valueClass: "text-3xl font-bold",
-    percentClass: "text-lg font-bold",
+    strokeWidth: 8,
+    valueClass: 'text-3xl font-bold',
+    percentClass: 'text-lg font-bold',
   },
   lg: {
     diameter: 132,
-    strokeWidth: 7,
-    valueClass: "text-[2.75rem] font-bold",
-    percentClass: "text-xl font-bold",
+    strokeWidth: 10,
+    valueClass: 'text-[2.75rem] font-bold',
+    percentClass: 'text-xl font-bold',
   },
 };
 
 export function RiskScoreCircle({
   score,
   level: levelProp,
-  size = "md",
+  size = 'md',
   showScore = true,
   className,
 }: RiskScoreCircleProps) {
   const normalizedScore = clampAiScore(score);
-  const visualProgress = getVisualProgress(normalizedScore);
   const level = levelProp ?? deriveRiskLevel(normalizedScore);
   const { diameter, strokeWidth, valueClass, percentClass } = SIZE_CONFIG[size];
   const radius = (diameter - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
+  const visualProgress = getRoundCapAdjustedArcPercent(normalizedScore, circumference, strokeWidth);
   const dashOffset = circumference - (visualProgress / 100) * circumference;
-  const riskStyles = getRiskStyles(level);
+  const gaugeGradient = getRiskGaugeGradient(level);
+  const reactId = useId().replace(/:/g, '');
+  const gradientId = `risk-gauge-gradient-${reactId}`;
 
   return (
     <div
       role="img"
       aria-label={`AI 생성 가능성 ${normalizedScore}%`}
-      className={cn(
-        "relative inline-flex shrink-0 items-center justify-center",
-        className,
-      )}
+      className={cn('relative inline-flex shrink-0 items-center justify-center', className)}
       style={{ width: diameter, height: diameter }}
     >
       <svg width={diameter} height={diameter} className="-rotate-90" aria-hidden>
+        <defs>
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+            {gaugeGradient.stops.map((stop) => (
+              <stop key={stop.offset} offset={stop.offset} stopColor={stop.color} />
+            ))}
+          </linearGradient>
+        </defs>
         <circle
           cx={diameter / 2}
           cy={diameter / 2}
           r={radius}
-          className={riskStyles.gaugeTrack}
+          stroke={gaugeGradient.trackColor}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -91,13 +93,13 @@ export function RiskScoreCircle({
           cx={diameter / 2}
           cy={diameter / 2}
           r={radius}
-          className={riskStyles.gaugeStroke}
+          stroke={`url(#${gradientId})`}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           fill="none"
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: dashOffset }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
           strokeDasharray={circumference}
         />
       </svg>
@@ -108,13 +110,9 @@ export function RiskScoreCircle({
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4 }}
         >
-          <span
-            className={cn(
-              "flex items-baseline justify-center leading-none tracking-[-0.03em] text-foreground",
-            )}
-          >
-            <span className={cn("tabular-nums", valueClass)}>{normalizedScore}</span>
-            <span className={cn("ml-0.5 -translate-y-0.5", percentClass)}>%</span>
+          <span className={cn('flex items-baseline justify-center leading-none tracking-[-0.03em] text-foreground')}>
+            <span className={cn('tabular-nums', valueClass)}>{normalizedScore}</span>
+            <span className={cn('ml-0.5 -translate-y-0.5', percentClass)}>%</span>
           </span>
         </motion.div>
       ) : null}

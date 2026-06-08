@@ -1,25 +1,16 @@
-export const PROGRESS_PREPARING_END = 35;
-export const PROGRESS_DETECTING_END = 70;
+const PROGRESS_PREPARING_END = 35;
+const PROGRESS_DETECTING_END = 70;
 /** UI 단계(inspecting → finalizing) 전환 기준 */
-export const PROGRESS_INSPECTING_END = 95;
+const PROGRESS_INSPECTING_END = 95;
 /** API 완료 전 자연 감속으로 도달하는 상한 (100%는 완료 시에만) */
-export const MAX_PROGRESS_BEFORE_COMPLETE = 99;
+const MAX_PROGRESS_BEFORE_COMPLETE = 99;
 
-export type AnalyzingStep = 'preparing' | 'detecting' | 'inspecting' | 'finalizing';
-
-export type ProgressTick = {
+type ProgressTick = {
   delayMs: number;
   increment: number;
 };
 
 const FINALIZING_CRAWL_START = PROGRESS_INSPECTING_END;
-
-export function getAnalyzingStep(progress: number): AnalyzingStep {
-  if (progress >= PROGRESS_INSPECTING_END) return 'finalizing';
-  if (progress >= PROGRESS_DETECTING_END) return 'inspecting';
-  if (progress >= PROGRESS_PREPARING_END) return 'detecting';
-  return 'preparing';
-}
 
 /**
  * 초반 빠름 → 중반 안정 → 후반 완만한 감속 → 95~99%는 끊김 없이 서서히 진행.

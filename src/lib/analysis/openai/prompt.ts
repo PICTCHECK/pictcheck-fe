@@ -1,12 +1,25 @@
 import type { VisionAnalysisContext } from '@/src/lib/analysis/openai/types';
 
-export function createOpenAiPrompt(context: VisionAnalysisContext): string {
+/** level=high일 때 suspicions 최소 개수 */
+export const MIN_SUSPICIONS_WHEN_HIGH = 2;
+
+export interface CreateOpenAiPromptOptions {
+  /** 재시도 시 이전 응답이 최소 개수 미달이었음을 알림 */
+  retryBecauseInsufficientSuspicions?: boolean;
+}
+
+export function createOpenAiPrompt(context: VisionAnalysisContext, options: CreateOpenAiPromptOptions = {}): string {
+  const isHighLevel = context.sightengineLevel === 'high';
+  const minimumSuspicions = isHighLevel ? MIN_SUSPICIONS_WHEN_HIGH : 0;
+
   const levelGuide =
-    context.sightengineLevel === 'high'
-      ? '외부 탐지 점수가 높습니다. 이미지 안에서 사람이 확인할 수 있는 시각적 의심 요소를 우선 찾으세요.'
-      : context.sightengineLevel === 'medium'
-        ? '외부 탐지 점수가 보통입니다. 뚜렷하게 보이는 시각적 단서만 신중하게 찾으세요.'
-        : '외부 탐지 점수가 낮습니다. 억지로 의심 요소를 만들지 말고, 명확히 보이는 관찰 포인트가 없으면 비워두세요.';
+    context.sightengineScore >= 95
+      ? `외부 탐지 점수가 매우 높습니다. 사용자가 직접 확인할 수 있는 서로 다른 시각적 검토 후보를 반드시 최소 ${MIN_SUSPICIONS_WHEN_HIGH}개 이상 찾으세요. 단, 보이지 않는 내용을 추측하거나 AI 여부를 단정하지 마세요.`
+      : isHighLevel
+        ? `외부 탐지 점수가 높습니다(level=high). 이미지 안에서 사람이 확인할 수 있는 서로 다른 시각적 의심 요소를 반드시 최소 ${MIN_SUSPICIONS_WHEN_HIGH}개 이상 찾으세요. 서로 다른 영역·카테고리를 우선 검토하세요.`
+        : context.sightengineLevel === 'medium'
+          ? '외부 탐지 점수가 보통입니다. 뚜렷하게 보이는 시각적 단서만 신중하게 찾으세요.'
+          : '외부 탐지 점수가 낮습니다. 억지로 의심 요소를 만들지 말고, 명확한 관찰 포인트가 없으면 비워두세요.';
 
   return [
     '당신은 이미지의 AI 여부를 최종 판정하지 않습니다.',
@@ -20,7 +33,28 @@ export function createOpenAiPrompt(context: VisionAnalysisContext): string {
     '- 실제 이미지에서 특정 위치로 확인 가능한 내용만 작성하세요.',
     '- 보이지 않는 근거를 추측하지 마세요.',
     '- 의심 요소는 최대 3개만 반환하세요.',
-    '- 명확한 관찰 포인트가 없으면 suspicions는 빈 배열로 반환하세요.',
+    '',
+    ...(minimumSuspicions > 0
+      ? [
+          `- level이 high이면 suspicions는 반드시 최소 ${minimumSuspicions}개, 최대 3개를 반환하세요.`,
+          '- 각 항목은 서로 다른 영역(좌표)과 서로 다른 관찰 포인트여야 합니다.',
+          '- 1개만 찾았더라도 이미지 전체를 다시 훑어 추가로 확인 가능한 후보를 찾으세요.',
+          '- 단, 존재하지 않는 특징을 만들어내지 마세요.',
+          '- 좌표가 불확실한 항목은 제외하고, 확실한 항목만 개수에 포함하세요.',
+          '',
+        ]
+      : []),
+    ...(context.sightengineScore >= 95
+      ? [
+          `- score가 95 이상이면 사용자가 직접 확인 가능한 시각적 검토 후보를 최소 ${MIN_SUSPICIONS_WHEN_HIGH}개 이상 반환하세요.`,
+          '- 단, 존재하지 않는 특징을 만들어내지 마세요.',
+          '- score가 95 이상이어도 실제로 관찰 가능한 위치만 선택하세요.',
+          '',
+        ]
+      : []),
+    ...(!isHighLevel
+      ? ['- level이 high가 아니고 명확한 관찰 포인트가 없으면 suspicions는 빈 배열로 반환하세요.', '']
+      : []),
     '',
     '우선 확인할 시각 단서:',
     '- 손가락, 관절, 얼굴, 눈, 치아처럼 형태가 어색한 부분',
@@ -29,6 +63,7 @@ export function createOpenAiPrompt(context: VisionAnalysisContext): string {
     '- 머리카락, 피부, 배경처럼 경계가 흐릿하거나 반복되는 부분',
     '- 손과 물체가 닿는 부분처럼 연결이 부자연스러운 부분',
     '- 반복 패턴, 비정상적인 질감, 형태 왜곡이 보이는 부분',
+    '- 상품 로고, 라벨, 금속 장식, 지퍼, 손잡이 등 세부 디테일이 흐릿한 부분',
     '',
     '문장 작성 규칙:',
     '- title은 짧은 한국어 명사형으로 작성하세요.',
@@ -43,7 +78,7 @@ export function createOpenAiPrompt(context: VisionAnalysisContext): string {
     '- 사용자가 확대해서 직접 확인할 수 있는 내용을 중심으로 작성하세요.',
     '',
     '- description과 detailDescription은 같은 문장을 반복하지 마세요.',
-    '- detailDescription은 description을 조금 더 구체적으로 설명하는 수준으로 작성하세요.',
+    '- detailDescription은 description보다 더 구체적인 관찰 내용을 설명하세요.',
     '',
     '- "실제 사진에서는", "정상적으로는", "보통은", "기대됩니다" 같은 비교 문장을 사용하지 마세요.',
     '- "AI 이미지에서 자주", "생성 이미지에서 흔히" 같은 추론 문장을 사용하지 마세요.',
@@ -54,10 +89,10 @@ export function createOpenAiPrompt(context: VisionAnalysisContext): string {
     '',
     '- 문장은 반드시 구체적인 대상부터 시작하세요.',
     '- 예: "머리카락 경계", "귀 주변 영역", "유리잔 반사", "손가락 형태"',
-    '- 조사("는", "가")만으로 시작하지 마세요.',
+    '- 조사("는", "가")로 시작하지 마세요.',
     '',
     '- 단정 표현을 피하세요.',
-    '- 주로 "처럼 보입니다", "관찰됩니다", "확인됩니다"를 사용하세요.',
+    '- "처럼 보입니다", "관찰됩니다", "확인됩니다"를 사용하세요.',
     '',
     '좋은 예:',
     '- "귀 주변 머리카락의 가장자리가 선명하게 분리되지 않고 부드럽게 퍼져 보입니다."',
@@ -88,7 +123,7 @@ export function createOpenAiPrompt(context: VisionAnalysisContext): string {
     '좌표 규칙:',
     '- 모든 좌표는 원본 이미지 기준 퍼센트(0~100)입니다.',
     '- area는 의심되는 특징이 실제로 보이는 부분만 감싸는 작은 사각형으로 지정하세요.',
-    '- area에 넓은 주변 맥락, 얼굴 전체, 물체 전체, 배경 전체를 포함하지 마세요.',
+    '- area에 얼굴 전체, 상품 전체, 배경 전체를 포함하지 마세요.',
     '- marker는 반드시 area의 정중앙 좌표로 지정하세요.',
     '- 좌표가 불확실하면 해당 의심 요소를 반환하지 마세요.',
     '',
@@ -114,5 +149,12 @@ export function createOpenAiPrompt(context: VisionAnalysisContext): string {
     '    }',
     '  ]',
     '}',
+    ...(options.retryBecauseInsufficientSuspicions
+      ? [
+          '',
+          `중요: 이전 응답의 suspicions 개수가 ${MIN_SUSPICIONS_WHEN_HIGH}개 미만이었습니다.`,
+          `level=high이므로 서로 다른 위치의 시각적 검토 후보를 반드시 최소 ${MIN_SUSPICIONS_WHEN_HIGH}개 이상 JSON에 포함하세요.`,
+        ]
+      : []),
   ].join('\n');
 }

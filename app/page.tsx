@@ -3,9 +3,17 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { Cuboid, ImageIcon, Lock, Sparkles, Sun } from 'lucide-react';
+import { Car, Gem, Laptop, Lock, Search } from 'lucide-react';
 import { useUploadImage } from '@/src/components/providers/upload-image-provider';
-import { Button, Card, Header, toastError, UploadBox, UploadImagePreview } from '@/src/components/ui';
+import {
+  Button,
+  Card,
+  FloatingActionBar,
+  Header,
+  toastError,
+  UploadBox,
+  UploadImagePreview,
+} from '@/src/components/ui';
 import { formatFileSize } from '@/src/lib/format-file-size';
 
 type UploadState = 'idle' | 'uploading' | 'uploaded';
@@ -13,10 +21,10 @@ type UploadState = 'idle' | 'uploading' | 'uploaded';
 const PREVIEW_LAYOUT_ID = 'upload-preview';
 
 const ANALYSIS_ITEMS = [
-  { label: 'AI 생성 패턴 분석', icon: Sparkles },
-  { label: '광원 및 그림자 분석', icon: Sun },
-  { label: '텍스처 및 반복 패턴 분석', icon: ImageIcon },
-  { label: '구조적 왜곡 및 이상 여부 확인', icon: Cuboid },
+  { label: '판매자가 올린 상품 사진이 의심될 때', icon: Search },
+  { label: '고가 전자기기 거래 전 확인이 필요할 때', icon: Laptop },
+  { label: '명품 판매 사진의 진위가 궁금할 때', icon: Gem },
+  { label: '오토바이·차량 부품 거래가 불안할 때', icon: Car },
 ];
 
 export default function Page() {
@@ -32,28 +40,35 @@ export default function Page() {
     return `${sizeLabel} • ${dimensions.width} × ${dimensions.height}`;
   }, [file, dimensions]);
 
+  const shouldShowFloatingActions = uploadState === 'uploaded';
+
   return (
     <main className="mx-auto min-h-screen w-full max-w-[390px] bg-background">
       <Header className="rounded-b-2xl" />
-      <div className="space-y-4 px-4 pb-8 pt-3">
+      <div
+        className={`space-y-4 px-4 pt-3 ${
+          shouldShowFloatingActions ? 'pb-[calc(env(safe-area-inset-bottom)+144px)]' : 'pb-8'
+        }`}
+      >
         <Card className="overflow-hidden p-0">
-          <div className="flex items-center justify-between bg-linear-to-r from-primary-100/60 to-white px-4 py-4">
+          <div className="flex items-center justify-between bg-linear-to-r from-primary-100/80 via-sky-50/70 to-amber-50/80 px-4 py-4">
             <div className="space-y-1">
-              <p className="text-title-md font-semibold leading-tight tracking-[-0.03em] text-primary-600">
-                AI로 의심되는 사진을
+              <p className="text-title-md font-semibold leading-tight tracking-[-0.03em]">
+                <span className="text-primary-600">거래 전</span>
+                <span>, 이 상품 사진</span>
               </p>
-              <p className="text-title-sm font-semibold leading-tight tracking-[-0.03em]">업로드하세요</p>
-              <p className="pt-1 text-caption text-muted-foreground">AI가 생성했을 가능성을 분석하고</p>
-              <p className="text-caption text-muted-foreground">결과와 시각 관찰 포인트를 알려드립니다.</p>
+              <p className="text-title-md font-semibold leading-tight tracking-[-0.03em]">믿어도 될까?</p>
+              <p className="pt-1 text-caption text-muted-foreground">AI 생성 가능성과 시각적 이상을 분석해</p>
+              <p className="text-caption text-muted-foreground">안전한 거래를 도와드립니다.</p>
             </div>
-            <div className="relative size-20 shrink-0">
+            <div className="relative size-24 shrink-0">
               <Image
                 src="/pictcheck_home_icon.svg"
                 alt="AI 이미지 분석 일러스트"
-                width={80}
-                height={80}
+                width={120}
+                height={120}
                 unoptimized
-                className="size-20 object-contain"
+                className="size-36 object-contain"
               />
             </div>
           </div>
@@ -83,7 +98,7 @@ export default function Page() {
         )}
 
         <Card className="space-y-2 px-4 py-5">
-          <h2 className="text-body-md font-semibold tracking-[-0.02em]">분석 항목</h2>
+          <h2 className="text-body-md font-semibold tracking-[-0.02em]">이런 경우 사용해보세요</h2>
           {ANALYSIS_ITEMS.map((item) => (
             <div key={item.label} className="border-b border-gray-100 py-3 last:border-b-0">
               <div className="flex items-center gap-3">
@@ -96,32 +111,31 @@ export default function Page() {
           ))}
         </Card>
 
-        {uploadState === 'uploaded' ? (
-          <>
-            <Link href="/analyzing" className="block">
-              <Button size="lg" className="h-12 w-full">
-                분석 시작
-              </Button>
-            </Link>
-            <Button
-              variant="secondary"
-              size="lg"
-              className="h-12 w-full"
-              onClick={() => {
-                clearFile();
-                setUploadState('idle');
-              }}
-            >
-              다른 이미지 선택
-            </Button>
-          </>
-        ) : null}
-
         <p className="flex items-center justify-center gap-2 pt-2 text-caption text-muted-foreground">
           <Lock className="size-3.5" />
           업로드한 이미지는 분석 후 즉시 삭제됩니다.
         </p>
       </div>
+      {shouldShowFloatingActions ? (
+        <FloatingActionBar>
+          <Link href="/analyzing" className="block">
+            <Button size="lg" className="h-12 w-full">
+              분석 시작
+            </Button>
+          </Link>
+          <Button
+            variant="secondary"
+            size="lg"
+            className="h-12 w-full"
+            onClick={() => {
+              clearFile();
+              setUploadState('idle');
+            }}
+          >
+            다른 이미지 선택
+          </Button>
+        </FloatingActionBar>
+      ) : null}
     </main>
   );
 }

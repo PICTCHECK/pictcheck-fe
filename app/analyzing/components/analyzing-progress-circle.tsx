@@ -1,10 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { getRoundCapAdjustedArcPercent } from '@/src/lib/circular-progress';
 import { CIRCLE_SIZE, CIRCUMFERENCE, RADIUS, STROKE_WIDTH } from '../constants/analyzing.constants';
 
 export function AnalyzingProgressCircle({ progress }: { progress: number }) {
-  const strokeOffset = CIRCUMFERENCE - (progress / 100) * CIRCUMFERENCE;
+  const visualArcProgress = getRoundCapAdjustedArcPercent(progress, CIRCUMFERENCE, STROKE_WIDTH);
+  const strokeOffset = CIRCUMFERENCE - (visualArcProgress / 100) * CIRCUMFERENCE;
 
   return (
     <div className="relative inline-flex size-[220px] items-center justify-center">
