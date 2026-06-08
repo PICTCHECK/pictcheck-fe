@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { ImageIcon } from "lucide-react";
-import { useDropzone } from "react-dropzone";
-import { cn } from "@/src/lib/cn";
-import { getUploadErrorMessage, type UploadErrorMessage } from "@/src/lib/upload-errors";
-import { Spinner } from "@/src/components/ui/spinner";
-import { UploadImagePreview } from "@/src/components/ui/upload-image-preview";
+import { ImageIcon } from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
+import { cn } from '@/src/lib/cn';
+import { getUploadErrorMessage, type UploadErrorMessage } from '@/src/lib/upload-errors';
+import { Spinner } from '@/src/components/ui/spinner';
+import { UploadImagePreview } from '@/src/components/ui/upload-image-preview';
 
 interface UploadBoxProps {
-  status?: "default" | "uploading";
+  status?: 'default' | 'uploading';
   previewUrl?: string | null;
   previewLayoutId?: string;
   maxSizeBytes?: number;
@@ -18,15 +18,15 @@ interface UploadBoxProps {
 }
 
 const ACCEPTED_IMAGE_TYPES = {
-  "image/jpeg": [".jpg", ".jpeg"],
-  "image/png": [".png"],
-  "image/webp": [".webp"],
+  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/png': ['.png'],
+  'image/webp': ['.webp'],
 };
 
 const DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export function UploadBox({
-  status = "default",
+  status = 'default',
   previewUrl,
   previewLayoutId,
   maxSizeBytes = DEFAULT_MAX_FILE_SIZE,
@@ -34,7 +34,7 @@ export function UploadBox({
   onValidationError,
   className,
 }: UploadBoxProps) {
-  const isUploading = status === "uploading";
+  const isUploading = status === 'uploading';
   const showPreview = isUploading && Boolean(previewUrl);
 
   const dropzone = useDropzone({
@@ -51,24 +51,24 @@ export function UploadBox({
     onDropRejected: (rejections) => {
       const firstError = rejections[0]?.errors[0];
       if (!firstError) {
-        onValidationError?.(getUploadErrorMessage("ANALYSIS_FAILED"));
+        onValidationError?.(getUploadErrorMessage('ANALYSIS_FAILED'));
         return;
       }
 
-      if (firstError.code === "too-many-files") {
-        onValidationError?.(getUploadErrorMessage("TOO_MANY_FILES"));
+      if (firstError.code === 'too-many-files') {
+        onValidationError?.(getUploadErrorMessage('TOO_MANY_FILES'));
         return;
       }
-      if (firstError.code === "file-invalid-type") {
-        onValidationError?.(getUploadErrorMessage("UNSUPPORTED_FILE_TYPE"));
+      if (firstError.code === 'file-invalid-type') {
+        onValidationError?.(getUploadErrorMessage('UNSUPPORTED_FILE_TYPE'));
         return;
       }
-      if (firstError.code === "file-too-large") {
-        onValidationError?.(getUploadErrorMessage("FILE_TOO_LARGE"));
+      if (firstError.code === 'file-too-large') {
+        onValidationError?.(getUploadErrorMessage('FILE_TOO_LARGE'));
         return;
       }
 
-      onValidationError?.(getUploadErrorMessage("ANALYSIS_FAILED"));
+      onValidationError?.(getUploadErrorMessage('ANALYSIS_FAILED'));
     },
   });
 
@@ -78,10 +78,10 @@ export function UploadBox({
     <div
       {...getRootProps()}
       className={cn(
-        "flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-primary-100 bg-white p-4 text-center transition-colors",
-        isDragActive && "border-primary-600 bg-primary-100/30",
-        isUploading && "cursor-not-allowed",
-        showPreview && "gap-0 overflow-hidden border-solid p-0",
+        'flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-primary-100 bg-white p-4 text-center transition-colors',
+        isDragActive && 'border-primary-600 bg-primary-100/30',
+        isUploading && 'cursor-not-allowed',
+        showPreview && 'gap-0 overflow-hidden border-solid p-0',
         className,
       )}
     >
@@ -109,7 +109,7 @@ export function UploadBox({
       ) : (
         <>
           <ImageIcon className="size-7 text-primary-600" />
-          <p className="text-body-md font-semibold text-foreground">이미지 업로드</p>
+          <p className="text-body-md font-semibold text-foreground">상품 이미지 업로드</p>
           <p className="text-caption text-muted-foreground">JPG, PNG, WEBP / 최대 10MB</p>
         </>
       )}

@@ -60,15 +60,6 @@ export function toRenderedPoint(point: RenderPoint, rect: ContainedImageRect): R
   };
 }
 
-export function toRenderedArea(area: SuspicionArea, rect: ContainedImageRect) {
-  return {
-    left: rect.offsetX + rect.width * (area.x / 100),
-    top: rect.offsetY + rect.height * (area.y / 100),
-    width: rect.width * (area.width / 100),
-    height: rect.height * (area.height / 100),
-  };
-}
-
 export function getSuspicionAreaCenter(area: SuspicionArea): RenderPoint {
   return {
     x: area.x + area.width / 2,

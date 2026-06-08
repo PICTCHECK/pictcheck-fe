@@ -1,3 +1,5 @@
+import type { MultilineCopy } from '@/src/lib/multiline-copy';
+
 export type RiskLevel = 'high' | 'medium' | 'low';
 
 /** 픽트체크 level 구간 (Sightengine score → semantic level) */
@@ -6,26 +8,18 @@ export const RISK_LEVEL_THRESHOLDS = {
   mediumMax: 69,
 } as const;
 
-/** Sightengine score + 픽트체크 level 해석 (UI 테마는 level, 표시·progress는 score) */
-export interface AiGenerationResult {
-  /** Sightengine AI 생성 가능성 퍼센트 (0~100) — 정량 수치 */
-  score: number;
-  /** Sightengine 기반 위험도 단계 — semantic color·카드 테마 */
-  level: RiskLevel;
-}
-
 export interface PictcheckResultDisplay {
   /** 결과 카드 제목 (예: AI 가능성 높음 · 의심 요소 확인) */
   statusLabel: string;
   /** 결과 설명 본문 */
-  summary: string;
+  summary: MultilineCopy;
   /** OpenAI Vision 시각적 관찰 목록·상세 분석 노출 여부 */
   showSuspicions: boolean;
 }
 
 export interface PictcheckSuspicionEmptyState {
   title: string;
-  description: string;
+  description: MultilineCopy;
 }
 
 export interface VisionSectionDisplay {
@@ -36,48 +30,93 @@ export interface VisionSectionDisplay {
 
 export type RiskBadgeVariant = 'riskHigh' | 'riskMedium' | 'riskLow';
 
+export interface RiskGaugeGradientStop {
+  offset: string;
+  color: string;
+}
+
+/** 결과 원형 게이지 — 분석 중 프로그레스와 같은 3단 그라데이션 */
+export interface RiskGaugeGradient {
+  trackColor: string;
+  stops: readonly RiskGaugeGradientStop[];
+}
+
+const RISK_GAUGE_GRADIENT_MAP: Record<RiskLevel, RiskGaugeGradient> = {
+  high: {
+    trackColor: '#FFE9EC',
+    stops: [
+      { offset: '0%', color: '#FF8A95' },
+      { offset: '55%', color: '#FF5C67' },
+      { offset: '100%', color: '#FF4756' },
+    ],
+  },
+  medium: {
+    trackColor: '#FFF6DE',
+    stops: [
+      { offset: '0%', color: '#FFD969' },
+      { offset: '55%', color: '#FFC83D' },
+      { offset: '100%', color: '#FFBC1F' },
+    ],
+  },
+  low: {
+    trackColor: '#DFF9E6',
+    stops: [
+      { offset: '0%', color: '#7FE7A4' },
+      { offset: '55%', color: '#4DD979' },
+      { offset: '100%', color: '#30C462' },
+    ],
+  },
+};
+
+export function getRiskGaugeGradient(level: RiskLevel): RiskGaugeGradient {
+  return RISK_GAUGE_GRADIENT_MAP[level];
+}
+
 export interface RiskStyleTokens {
   card: string;
   title: string;
-  score: string;
-  gaugeTrack: string;
-  gaugeStroke: string;
-  badgeVariant: RiskBadgeVariant;
-  label: string;
 }
+
+/** 결과 요약 카드 — 레벨 무관 공통 배경 */
+const RESULT_SUMMARY_CARD_BG = 'bg-[#FFFFFD]';
 
 const RISK_STYLE_MAP: Record<RiskLevel, RiskStyleTokens> = {
   high: {
-    card: 'border-red-200 bg-red-50/40',
-    title: 'text-red-500',
-    score: 'text-red-500',
-    gaugeTrack: 'stroke-red-100',
-    gaugeStroke: 'stroke-red-500',
-    badgeVariant: 'riskHigh',
-    label: '높음',
+    card: `${RESULT_SUMMARY_CARD_BG} shadow-[0_10px_24px_-14px_rgba(255,71,86,0.18)]`,
+    title: 'text-[#FF4756]',
   },
   medium: {
-    card: 'border-orange-200 bg-orange-50/40',
-    title: 'text-orange-500',
-    score: 'text-orange-500',
-    gaugeTrack: 'stroke-orange-100',
-    gaugeStroke: 'stroke-orange-500',
-    badgeVariant: 'riskMedium',
-    label: '보통',
+    card: `${RESULT_SUMMARY_CARD_BG} shadow-[0_10px_24px_-14px_rgba(255,188,31,0.2)]`,
+    title: 'text-[#FFBC1F]',
   },
   low: {
-    card: 'border-emerald-200 bg-emerald-50/40',
-    title: 'text-emerald-500',
-    score: 'text-emerald-500',
-    gaugeTrack: 'stroke-emerald-100',
-    gaugeStroke: 'stroke-emerald-500',
-    badgeVariant: 'riskLow',
-    label: '낮음',
+    card: `${RESULT_SUMMARY_CARD_BG} shadow-[0_10px_24px_-14px_rgba(48,196,98,0.18)]`,
+    title: 'text-[#30C462]',
   },
 };
 
 export function getRiskStyles(level: RiskLevel): RiskStyleTokens {
   return RISK_STYLE_MAP[level];
+}
+
+const RISK_LEVEL_BADGE_LABEL: Record<RiskLevel, string> = {
+  high: '위험도 높음',
+  medium: '위험도 중간',
+  low: '위험도 낮음',
+};
+
+export function getRiskLevelBadgeLabel(level: RiskLevel): string {
+  return RISK_LEVEL_BADGE_LABEL[level];
+}
+
+const RISK_LEVEL_BADGE_CLASS: Record<RiskLevel, string> = {
+  high: 'border border-[#FFD9DF] bg-[#FFF1F4] text-[#FF4756]',
+  medium: 'border border-[#FFE8AF] bg-[#FFF8E7] text-[#FFBC1F]',
+  low: 'border border-[#CCF1D8] bg-[#EEFBF1] text-[#30C462]',
+};
+
+export function getRiskLevelBadgeClass(level: RiskLevel): string {
+  return RISK_LEVEL_BADGE_CLASS[level];
 }
 
 export function clampAiScore(score: number): number {
@@ -97,52 +136,42 @@ export function deriveRiskLevel(score: number): RiskLevel {
   return 'high';
 }
 
-/** Sightengine score만으로 결과 객체 생성 (level은 내부 기준으로 파생) */
-export function createAiGenerationResult(rawScore: number): AiGenerationResult {
-  const score = clampAiScore(rawScore);
-  return { score, level: deriveRiskLevel(score) };
-}
-
-const PICTCHECK_RESULT_DISPLAY: Record<RiskLevel, Record<'true' | 'false', PictcheckResultDisplay>> = {
+const PICTCHECK_RESULT_DISPLAY = {
   high: {
     true: {
-      statusLabel: 'AI 가능성 높음 · 의심 요소 확인',
-      summary:
-        '외부 탐지 기준 AI 생성 가능성이 높게 분석되었습니다. 이미지에서도 AI 생성 이미지에서 자주 나타나는 의심 요소가 확인되었습니다.',
+      statusLabel: '거래 전 확인이 필요해요',
+      summary: ['이 사진에서 실제 촬영 사진과 다른', '의심 신호가 확인되었습니다.'],
       showSuspicions: true,
     },
     false: {
-      statusLabel: 'AI 가능성 높음 · 근거 확인 어려움',
-      summary:
-        '외부 탐지 기준 AI 생성 가능성이 높게 분석되었습니다. 다만 사람이 눈으로 확인할 수 있는 뚜렷한 의심 요소는 제한적입니다.',
+      statusLabel: '거래 전 확인이 필요해요',
+      summary: ['분석 결과, 거래 전 한 번 더 확인해야 할', '위험 신호가 감지되었습니다.'],
       showSuspicions: false,
     },
   },
+
   medium: {
     true: {
-      statusLabel: 'AI 가능성 보통 · 의심 요소 확인',
-      summary:
-        '외부 탐지 기준 AI 생성 가능성이 보통 수준으로 분석되었습니다. 이미지 일부에서 AI 생성 이미지에서 자주 나타나는 의심 요소가 확인되었습니다.',
+      statusLabel: '추가 확인을 권장해요',
+      summary: ['일부 영역에서 신뢰도를 낮출 수 있는', '의심 신호가 발견되었습니다.'],
       showSuspicions: true,
     },
     false: {
-      statusLabel: 'AI 가능성 보통 · 근거 확인 어려움',
-      summary:
-        '외부 탐지 기준 AI 생성 가능성은 보통 수준입니다. 다만 사람이 눈으로 확인할 수 있는 뚜렷한 의심 요소는 제한적입니다.',
+      statusLabel: '신중한 확인을 권장해요',
+      summary: ['큰 이상은 보이지 않지만,', '이미지 하나만으로 판단하기에는 주의가 필요합니다.'],
       showSuspicions: false,
     },
   },
+
   low: {
     true: {
-      statusLabel: 'AI 가능성 낮음 · 참고 요소 발견',
-      summary:
-        '외부 탐지 기준 AI 생성 가능성은 낮게 분석되었습니다. 다만 일부 영역에서 참고할 만한 시각적 요소가 발견되어 함께 표시했습니다.',
+      statusLabel: '전반적으로 양호해요',
+      summary: ['전반적으로 자연스럽지만 일부 영역에서', '참고할 만한 관찰 포인트가 발견되었습니다.'],
       showSuspicions: true,
     },
     false: {
-      statusLabel: 'AI 가능성 낮음',
-      summary:
-        '외부 탐지 기준 AI 생성 가능성이 낮게 분석되었습니다. 이미지에서도 뚜렷한 의심 요소는 확인되지 않았습니다.',
+      statusLabel: '특별한 이상 징후가 없어요',
+      summary: ['현재 분석 기준에서는 거래 신뢰도를 낮출 만한', '위험 신호가 보이지 않습니다.'],
       showSuspicions: false,
     },
   },
@@ -156,27 +185,33 @@ export function getPictcheckResultDisplay(level: RiskLevel, suspicionDetected: b
 /** 시각적 관찰 포인트 미노출 시 빈 상태 (level별 톤·문구) */
 const PICTCHECK_SUSPICION_EMPTY: Record<RiskLevel, PictcheckSuspicionEmptyState> = {
   high: {
-    title: '시각적 특징이 제한적이에요',
-    description:
-      '외부 탐지 기준으로는 AI 생성 가능성이 높지만, 사람이 눈으로 확인할 수 있는 시각적 특징은 제한적입니다.',
+    title: '눈에 보이는 단서는 제한적이에요',
+    description: [
+      '압축, 보정, 낮은 해상도처럼 이미지 상태에 따라 사람이',
+      '직접 확인할 수 있는 단서가 적을 수 있습니다.',
+    ],
   },
+
   medium: {
-    title: '뚜렷한 시각 특징이 없어요',
-    description: '외부 탐지 기준은 보통 수준이며, 이미지에서 사람이 확인할 만한 시각적 특징은 제한적입니다.',
+    title: '확인 가능한 단서가 적어요',
+    description: [
+      '사진 안에서 명확히 짚을 수 있는 부분은 많지 않습니다.',
+      '판매자에게 추가 사진이나 원본 사진을 요청해보세요.',
+    ],
   },
+
   low: {
-    title: '참고할 시각 특징이 거의 없어요',
-    description: '외부 탐지 기준으로는 AI 생성 가능성이 낮게 분석되었습니다.',
+    title: '짚어볼 만한 영역이 없어요',
+    description: ['현재 이미지에서는 따로 확대해서 확인할 만한', '의심 영역이 발견되지 않았습니다.'],
   },
 };
-
 export function getPictcheckSuspicionEmptyState(level: RiskLevel): PictcheckSuspicionEmptyState {
   return PICTCHECK_SUSPICION_EMPTY[level];
 }
 
 export function formatSuspicionCountLabel(count: number, showSuspicions: boolean): string {
   if (!showSuspicions) return '표시 없음';
-  return `${count}개 표시`;
+  return `${count}개 발견`;
 }
 
 export function getVisionSectionDisplay(level: RiskLevel): VisionSectionDisplay {

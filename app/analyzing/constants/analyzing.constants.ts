@@ -1,4 +1,9 @@
-export const ANALYZING_STEPS = ['이미지 업로드 완료', 'AI 패턴 분석 중', '의심 영역 추정 중', '결과 생성 중'] as const;
+export const ANALYZING_STEPS = [
+  '이미지 업로드 완료',
+  '이미지 특징 분석 중',
+  '의심 영역 탐색 중',
+  '결과 생성 중',
+] as const;
 
 export const ANALYZING_STEP_RANGES = [
   { start: 0, end: 35 },

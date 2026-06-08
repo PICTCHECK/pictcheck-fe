@@ -1,9 +1,10 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { Badge } from '@/src/components/ui/badge';
 import { Card } from '@/src/components/ui/card';
 import { SuspicionThumbnail } from '@/src/components/ui/suspicion-thumbnail';
+import { cn } from '@/src/lib/cn';
 import type { SuspicionArea, VisionEvidenceStrength } from '@/src/lib/analysis/types';
 import type { RiskBadgeVariant } from '@/src/lib/risk-styles';
 
@@ -20,6 +21,7 @@ type AnalysisCardProps = {
   } | null;
   variant?: AnalysisCardVariant;
   children?: ReactNode;
+  onClick?: () => void;
 };
 
 const CONFIDENCE_UI: Record<VisionEvidenceStrength, { label: string; badgeVariant: RiskBadgeVariant }> = {
@@ -35,12 +37,29 @@ export function AnalysisCard({
   thumbnail,
   variant = 'default',
   children,
+  onClick,
 }: AnalysisCardProps) {
   const confidenceUi = CONFIDENCE_UI[confidence];
   const thumbnailSizeClass = variant === 'default' ? 'size-24' : 'size-24';
+  const interactive = Boolean(onClick);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!onClick || (event.key !== 'Enter' && event.key !== ' ')) return;
+    event.preventDefault();
+    onClick();
+  };
 
   return (
-    <Card className="flex gap-3 p-3">
+    <Card
+      className={cn(
+        'flex gap-3 p-3',
+        interactive && 'cursor-pointer transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:shadow-focus',
+      )}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+    >
       {thumbnail ? (
         <SuspicionThumbnail src={thumbnail.src} alt={thumbnail.alt ?? title} area={thumbnail.area} size="sm" />
       ) : (

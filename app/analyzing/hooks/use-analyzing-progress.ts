@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUploadImage } from '@/src/components/providers/upload-image-provider';
 import { toastError } from '@/src/components/ui';
@@ -9,10 +9,8 @@ import { getUploadErrorMessage } from '@/src/lib/upload-errors';
 import {
   buildCompletionProgressSteps,
   computeAnalyzingProgressTick,
-  getAnalyzingStep,
   getCompletionStepDelayMs,
   getNextProgressValue,
-  type AnalyzingStep,
 } from '../lib/analyzing-progress-tick';
 
 const REDIRECT_AFTER_COMPLETE_MS = 500;
@@ -61,8 +59,6 @@ function advanceProgressThroughSteps(
   };
 }
 
-export type { AnalyzingStep };
-
 export function useAnalyzingProgress() {
   const router = useRouter();
   const { file, setAnalysisResult } = useUploadImage();
@@ -70,8 +66,6 @@ export function useAnalyzingProgress() {
   const progressRef = useRef(0);
   const hasStartedAnalysisRef = useRef(false);
   const hasRedirectedRef = useRef(false);
-
-  const currentStep = useMemo(() => getAnalyzingStep(progress), [progress]);
 
   useEffect(() => {
     if (file || hasRedirectedRef.current) return;
@@ -174,5 +168,5 @@ export function useAnalyzingProgress() {
     };
   }, [file, router, setAnalysisResult]);
 
-  return { file, progress, currentStep };
+  return { file, progress };
 }
